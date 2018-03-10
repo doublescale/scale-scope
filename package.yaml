@@ -1,0 +1,83 @@
+name: scale-scope
+version: 0.1.0
+synopsis: View 3D models and animation sequences
+license: MIT
+license-file: LICENSE
+author: doublescale
+maintainer: doublescale@tutanota.com
+
+flags:
+  debug:
+    description: Fewer warnings, less optimization
+    default: false
+    manual: true
+
+ghc-options:
+  - -threaded
+
+when:
+  - condition: flag(debug)
+    then:
+      ghc-options:
+        - -fdefer-type-errors
+    else:
+      ghc-options:
+        - -Wall
+        - -Werror
+        - -O2
+
+dependencies:
+  - base
+  - attoparsec
+  - bytestring
+  - cereal
+  - cereal-vector
+  - containers
+  - deepseq
+  - directory
+  - filepath
+  - ghc-prim
+  - half
+  - JuicyPixels
+  - lens
+  - linear
+  - mtl
+  - optparse-applicative
+  - vector
+  - zlib
+
+default-extensions:
+  - DeriveAnyClass
+  - FlexibleContexts
+  - DeriveGeneric
+  - NamedFieldPuns
+  - RecordWildCards
+  - ScopedTypeVariables
+
+source-dirs: src
+
+executables:
+  scale-scope:
+    main: Main.hs
+    other-modules:
+      - AppState
+      - Event
+      - Mesh
+      - MeshConversion
+      - Render
+      - Render.Mesh
+      - Render.Shader
+      - Render.Texture
+      - Render.Types
+      - SerializeHalf
+      - Util
+    dependencies:
+      - OpenGL
+      - sdl2
+  scale-pack:
+    main: MainPack.hs
+    other-modules:
+      - Mesh
+      - MeshConversion
+      - OBJParser
+      - SerializeHalf
