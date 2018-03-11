@@ -8,14 +8,13 @@ import Control.Applicative ((<**>), optional, some)
 import Control.Monad (forM)
 import qualified Data.ByteString.Lazy.Char8 as BSL
 import Data.Semigroup ((<>))
-import qualified Data.Serialize as Cereal
+import qualified Data.Store as Store
 import qualified Options.Applicative as O
 
 import Mesh (AnimationData(..), RGBGrid(..), RGBGrid)
 import MeshConversion
        (objToPolyMeshSequence, triangulateMeshSequence)
 import OBJParser (parseOBJ)
-import SerializeHalf ()
 
 data Options = Options
   { optFramerate :: Double
@@ -77,7 +76,9 @@ packObjFiles Options {..} = do
             triangulateMeshSequence (objToPolyMeshSequence objFiles)
         }
   putStrLn ("Writing " ++ show optOutFile)
-  BSL.writeFile optOutFile (Zlib.compress (Cereal.encodeLazy animationData))
+  BSL.writeFile
+    optOutFile
+    (Zlib.compress (BSL.fromStrict (Store.encode animationData)))
 
 readTextureFile :: FilePath -> IO (Either String RGBGrid)
 readTextureFile path = do

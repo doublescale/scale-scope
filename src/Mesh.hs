@@ -8,11 +8,10 @@ module Mesh
   , TriFaces
   ) where
 
-import Data.Serialize (Serialize)
+import Data.Store (Store)
 import qualified Data.Vector as V
-import Data.Vector.Serialize ()
 import qualified Data.Vector.Storable as VS
-import Data.Word (Word8, Word32)
+import Data.Word (Word32, Word8)
 import GHC.Generics (Generic)
 import Linear (V2, V3)
 
@@ -20,28 +19,28 @@ data AnimationData scalar fs = AnimationData
   { animationFramerate :: Double
   , textureRGBData :: Maybe RGBGrid
   , meshSequence :: MeshSequence scalar fs
-  } deriving (Generic, Serialize, Show)
+  } deriving (Generic, Show, Store)
 
 data RGBGrid = RGBGrid
   { gridWidth :: Int
   , gridHeight :: Int
   , gridPixels :: VS.Vector Word8
-  } deriving (Generic, Serialize, Show)
+  } deriving (Generic, Show, Store)
 
 data MeshSequence scalar fs = MeshSequence
   { meshConstant :: MeshConstant scalar fs
   , meshFrames :: [MeshFrame scalar]
-  } deriving (Generic, Serialize, Show)
+  } deriving (Generic, Show, Store)
 
 data MeshConstant scalar fs = MeshConstant
   { faces :: fs
   , vertexUVs :: VS.Vector (V2 scalar)
-  } deriving (Generic, Serialize, Show)
+  } deriving (Generic, Show, Store)
 
 data MeshFrame scalar = MeshFrame
   { vertexPositions :: VS.Vector (V3 scalar)
   , vertexNormals :: VS.Vector (V3 scalar)
-  } deriving (Generic, Serialize, Show)
+  } deriving (Generic, Show, Store)
 
 type PolyFaces = V.Vector (VS.Vector Word32)
 

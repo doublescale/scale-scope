@@ -13,7 +13,7 @@ import Control.Monad.State (MonadState, get, gets, modify)
 import Data.Bool (bool)
 import qualified Data.ByteString.Lazy.Char8 as BSL
 import Data.Maybe (mapMaybe)
-import qualified Data.Serialize as Cereal
+import qualified Data.Store as Store
 import Linear (V2(V2), (*^), (^/), _y)
 import qualified SDL
 
@@ -25,7 +25,6 @@ import Render.Mesh (deleteMeshSequence, loadMeshSequence)
 import Render.Shader (loadShader)
 import Render.Types
        (initRenderState, renderStateMeshesL, renderStateShaderL)
-import SerializeHalf ()
 import Util (fromCString)
 
 loadPaths :: (MonadIO m, MonadState AppState m) => [FilePath] -> m ()
@@ -42,8 +41,9 @@ loadPaths [path] = do
     loadAnimationFile file =
       liftIO $ do
         blob <- BSL.readFile file
-        let Right ad = Cereal.decodeLazy (Zlib.decompress blob)
-        return ad
+        case Store.decode (BSL.toStrict (Zlib.decompress blob)) of
+          Right animData -> return animData
+          Left err -> error (show err)
 loadPaths _ = liftIO (putStrLn "Need exactly one file argument.")
 
 reloadShader :: (MonadIO m, MonadState AppState m) => m ()
