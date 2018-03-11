@@ -11,9 +11,13 @@ stack build
 stack install
 ```
 
+It will take a while.
+
 ## Usage
 This project includes two executables.
+
 `scale-pack` packs an OBJ file (or a sequence of them) into a custom format.
+
 `scale-scope` visualizes the resulting file using SDL2 and OpenGL3.
 
 ### Packing files
@@ -36,8 +40,7 @@ Example:
 scale-scope data/rex-walk-20hz-lvl0.ssc
 ```
 
-The program's working directory must include the shader/ directory.
-
+The program's working directory must include the `shader/` directory.
 While the program is running, it also accepts files to display via
 drag&drop onto its window.
 
