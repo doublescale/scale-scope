@@ -55,7 +55,7 @@ emptyState =
 withWindow :: (SDL.Window -> IO ()) -> IO ()
 withWindow callback = do
     SDL.initialize [SDL.InitVideo]
-    win <- SDL.createWindow "OBJ Viewer" SDL.defaultWindow
+    win <- SDL.createWindow "ScaleScope" SDL.defaultWindow
       { SDL.windowOpenGL = Just SDL.defaultOpenGL
         { SDL.glProfile = SDL.Core SDL.Normal 3 3
         , SDL.glMultisampleSamples = 4
