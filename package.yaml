@@ -59,6 +59,7 @@ executables:
   scale-scope:
     main: Main.hs
     other-modules:
+      - Action
       - AppState
       - Event
       - Mesh

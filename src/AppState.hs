@@ -4,12 +4,15 @@ module AppState where
 
 import Control.Lens (makeLensesWith)
 import Linear (V2, V3)
+import qualified SDL
 
 import Render.Types (RenderState)
 import Util (suffixedLRule)
 
+-- TODO: Separate SDL, GL, and "App" states.
 data AppState = AppState
-  { appWinSize :: V2 Int
+  { appWindow :: SDL.Window
+  , appWinSize :: V2 Int
   , appPaused :: Bool
   , appFrame :: Double
   , appFrameRateInterp :: Double

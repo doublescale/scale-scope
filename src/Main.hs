@@ -21,17 +21,18 @@ runWithFiles :: [FilePath] -> IO ()
 runWithFiles files =
   withWindow $ \win -> do
     time <- SDL.time
-    let startState = initState time
+    let startState = initState win time
     _ <-
       execStateT
         (runExceptT (lift (loadPaths files >> reloadShader) >> eventLoop win))
         startState
     return ()
 
-initState :: Double -> AppState
-initState startTime =
+initState :: SDL.Window -> Double -> AppState
+initState appWindow startTime =
   AppState
-  { appWinSize = V2 0 0
+  { appWindow
+  , appWinSize = V2 0 0
   , appPaused = False
   , appFrame = 0
   , appFrameRateInterp = 0
