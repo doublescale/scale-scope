@@ -7,9 +7,9 @@ module Event
 import qualified Codec.Compression.Zlib as Zlib
 import Control.Lens ((%=), (*=), (+=), (-=), (.=), (<~), (^.))
 import Control.Monad (forever)
-import Control.Monad.Except (ExceptT, MonadError, throwError)
+import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.State (MonadState, StateT, get, gets, modify)
+import Control.Monad.State (MonadState, get, gets, modify)
 import Data.Bool (bool)
 import qualified Data.ByteString.Lazy.Char8 as BSL
 import Data.Maybe (mapMaybe)
@@ -52,18 +52,29 @@ reloadShader = do
   newStateShader <- loadShader oldStateShader
   appRenderStateL . renderStateShaderL .= newStateShader
 
-eventLoop :: SDL.Window -> ExceptT () (StateT AppState IO) ()
-eventLoop win = forever $ do
-  actions <- mapMaybe eventToAction <$> SDL.pollEvents
-  mapM_ handleAction actions
-  appWinSizeL <~ fmap fromIntegral <$> SDL.glGetDrawableSize win
-  modify . integrateState =<< SDL.time
-  pressedButtons <- SDL.getMouseButtons
-  _ <- SDL.setMouseLocationMode
-    (bool SDL.AbsoluteLocation SDL.RelativeLocation
-     (any pressedButtons [SDL.ButtonLeft, SDL.ButtonMiddle]))
-  render =<< get
-  SDL.glSwapWindow win
+eventLoop ::
+     (MonadIO m, MonadState AppState m, MonadError () m) => SDL.Window -> m ()
+eventLoop win =
+  forever $ do
+    actions <- mapMaybe eventToAction <$> SDL.pollEvents
+    mapM_ handleAction actions
+    handleMouseMode
+    appWinSizeL <~ fmap fromIntegral <$> SDL.glGetDrawableSize win
+    modify . integrateState =<< SDL.time
+    render =<< get
+    SDL.glSwapWindow win
+
+handleMouseMode :: MonadIO m => m ()
+handleMouseMode =
+  liftIO $ do
+    pressedButtons <- SDL.getMouseButtons
+    _ <-
+      SDL.setMouseLocationMode
+        (bool
+           SDL.AbsoluteLocation
+           SDL.RelativeLocation
+           (any pressedButtons [SDL.ButtonLeft, SDL.ButtonMiddle]))
+    return ()
 
 eventToAction :: SDL.Event -> Maybe AppAction
 eventToAction SDL.Event
