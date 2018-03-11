@@ -7,7 +7,6 @@ module OBJParser
   ) where
 
 import Control.Applicative ((<|>), liftA2, liftA3)
-import Control.DeepSeq (NFData)
 import qualified Data.Attoparsec.ByteString.Char8 as P
 import qualified Data.ByteString.Lazy.Char8 as BSL
 import Data.Either (rights)
@@ -19,12 +18,12 @@ data OBJLine
   = PosLine (V3 Double)
   | UvLine (V2 Double)
   | FaceLine (V.Vector FaceEntry)
-  deriving (Generic, NFData, Show)
+  deriving (Generic, Show)
 
 data FaceEntry = FaceEntry
   { posIdx :: Int
   , uvIdx :: Maybe Int
-  } deriving (Generic, NFData, Show)
+  } deriving (Generic, Show)
 
 parseOBJ :: BSL.ByteString -> [OBJLine]
 parseOBJ = rights . map (P.parseOnly objLine . BSL.toStrict) . BSL.lines

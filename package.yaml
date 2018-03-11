@@ -33,7 +33,6 @@ dependencies:
   - cereal
   - cereal-vector
   - containers
-  - deepseq
   - directory
   - filepath
   - ghc-prim
