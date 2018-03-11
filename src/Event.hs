@@ -5,7 +5,8 @@ module Event
   ) where
 
 import qualified Codec.Compression.Zlib as Zlib
-import Control.Lens ((%=), (*=), (+=), (-=), (.=), (//=), (^.))
+import Control.Lens
+       ((%=), (*=), (+=), (-=), (.=), (//=), (<~), (^.))
 import Control.Monad (forever)
 import Control.Monad.Except (ExceptT, MonadError, throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -53,16 +54,9 @@ reloadShader = do
 
 eventLoop :: SDL.Window -> ExceptT () (StateT (AppState RenderState) IO) ()
 eventLoop win = forever $ do
-  events <- SDL.pollEvents
-  mapM_ (handleEvent win) events
-  winSize <- fmap fromIntegral <$> SDL.glGetDrawableSize win
-  appWinSizeL .= winSize
-  time <- SDL.time
-  timePrev <- gets appTimePrev
-  let dt = time - timePrev
-  frameRateInterp <- gets appFrameRateInterp
-  appFrameL += dt * frameRateInterp
-  modify (integrateState dt)
+  mapM_ (handleEvent win) =<< SDL.pollEvents
+  appWinSizeL <~ fmap fromIntegral <$> SDL.glGetDrawableSize win
+  modify . integrateState =<< SDL.time
   pressedButtons <- SDL.getMouseButtons
   _ <- SDL.setMouseLocationMode
     (bool SDL.AbsoluteLocation SDL.RelativeLocation
@@ -124,7 +118,7 @@ handleEvent _ SDL.Event {SDL.eventPayload = SDL.QuitEvent} = throwError ()
 handleEvent _ _ = return ()
 
 integrateState :: Double -> AppState rs -> AppState rs
-integrateState dt st@AppState {appViewState = vs@ViewState {..}, ..} =
+integrateState currentTime st@AppState {appViewState = vs@ViewState {..}, ..} =
   st
   { appViewState =
       vs
@@ -138,12 +132,14 @@ integrateState dt st@AppState {appViewState = vs@ViewState {..}, ..} =
       , viewCamPos =
           (viewCamPos + dt * posFactor *^ viewSamplePos) ^/ (1 + dt * posFactor)
       }
-  , appTimePrev = appTimePrev + dt
+  , appTimePrev = currentTime
   , appFrameRateInterp =
       (appFrameRateInterp + dt * rateFactor * effectiveFrameRate) /
       (1 + dt * rateFactor)
+  , appFrame = appFrame + dt * appFrameRateInterp
   }
   where
+    dt = currentTime - appTimePrev
     newCamAngleVel = viewCamAngleVel ^/ (1 + angleDamp * dt)
     newCamDistanceVel = viewCamDistanceVel / (1 + distanceDamp * dt)
     angleDamp = 10
