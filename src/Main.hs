@@ -3,9 +3,9 @@
 module Main where
 
 import Control.Exception (finally)
-import Control.Monad.Except (runExceptT)
-import Control.Monad.State (execStateT)
-import Control.Monad.Trans (lift)
+import Control.Monad (void)
+import Control.Monad.Except (ExceptT, runExceptT)
+import Control.Monad.State (StateT, execStateT)
 import Linear (V2(V2), V3(V3))
 import qualified SDL
 import System.Environment (getArgs)
@@ -20,13 +20,14 @@ main = getArgs >>= runWithFiles
 runWithFiles :: [FilePath] -> IO ()
 runWithFiles files =
   withWindow $ \win -> do
-    time <- SDL.time
-    let startState = initState win time
-    _ <-
-      execStateT
-        (runExceptT (lift (loadPaths files >> reloadShader) >> eventLoop win))
-        startState
-    return ()
+    startTime <- SDL.time
+    runAppStack (initState win startTime) $ do
+      loadPaths files
+      reloadShader
+      eventLoop win
+
+runAppStack :: AppState -> ExceptT () (StateT AppState IO) () -> IO ()
+runAppStack startState app = void (execStateT (runExceptT app) startState)
 
 initState :: SDL.Window -> Double -> AppState
 initState appWindow startTime =
@@ -52,16 +53,23 @@ initState appWindow startTime =
   }
 
 withWindow :: (SDL.Window -> IO ()) -> IO ()
-withWindow callback = do
-    SDL.initialize [SDL.InitVideo]
-    win <- SDL.createWindow "ScaleScope" SDL.defaultWindow
-      { SDL.windowOpenGL = Just SDL.defaultOpenGL
-        { SDL.glProfile = SDL.Core SDL.Normal 3 3
-        , SDL.glMultisampleSamples = 4
-        }
-      , SDL.windowResizable = True
-      }
-    _ <- SDL.glCreateContext win
-    SDL.swapInterval SDL.$= SDL.SynchronizedUpdates
-    callback win
-  `finally` SDL.quit
+withWindow callback = run `finally` SDL.quit
+  where
+    windowTitle = "ScaleScope"
+    run = do
+      SDL.initialize [SDL.InitVideo]
+      win <-
+        SDL.createWindow
+          windowTitle
+          SDL.defaultWindow
+          { SDL.windowOpenGL =
+              Just
+                SDL.defaultOpenGL
+                { SDL.glProfile = SDL.Core SDL.Normal 3 3
+                , SDL.glMultisampleSamples = 4
+                }
+          , SDL.windowResizable = True
+          }
+      _ <- SDL.glCreateContext win
+      SDL.swapInterval SDL.$= SDL.SynchronizedUpdates
+      callback win
