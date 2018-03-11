@@ -5,9 +5,10 @@ module AppState where
 import Control.Lens (makeLensesWith)
 import Linear (V2, V3)
 
+import Render.Types (RenderState)
 import Util (suffixedLRule)
 
-data AppState renderstate = AppState
+data AppState = AppState
   { appWinSize :: V2 Int
   , appPaused :: Bool
   , appFrame :: Double
@@ -16,7 +17,7 @@ data AppState renderstate = AppState
   , appFrameRateFactor :: Double
   , appTimePrev :: Double
   , appViewState :: ViewState
-  , appRenderState :: renderstate
+  , appRenderState :: RenderState
   }
 
 data ViewState = ViewState

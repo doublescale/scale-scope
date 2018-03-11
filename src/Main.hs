@@ -12,7 +12,7 @@ import System.Environment (getArgs)
 
 import AppState (AppState(..), ViewState(..))
 import Event (eventLoop, loadPaths, reloadShader)
-import Render.Types (RenderState, initRenderState)
+import Render.Types (initRenderState)
 
 main :: IO ()
 main = getArgs >>= runWithFiles
@@ -21,17 +21,15 @@ runWithFiles :: [FilePath] -> IO ()
 runWithFiles files =
   withWindow $ \win -> do
     time <- SDL.time
-    let startState = emptyState {appTimePrev = time}
+    let startState = initState time
     _ <-
       execStateT
-        (runExceptT
-           (lift (loadPaths files >> reloadShader) >>
-            eventLoop win))
+        (runExceptT (lift (loadPaths files >> reloadShader) >> eventLoop win))
         startState
     return ()
 
-emptyState :: AppState RenderState
-emptyState =
+initState :: Double -> AppState
+initState startTime =
   AppState
   { appWinSize = V2 0 0
   , appPaused = False
@@ -39,7 +37,7 @@ emptyState =
   , appFrameRateInterp = 0
   , appFrameRate = 0
   , appFrameRateFactor = 1
-  , appTimePrev = 0
+  , appTimePrev = startTime
   , appViewState =
       ViewState
       { viewCamAngle = V2 0 0

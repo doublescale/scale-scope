@@ -27,8 +27,7 @@ import Render.Types
        (initRenderState, renderStateMeshesL, renderStateShaderL)
 import SerializeHalf ()
 
-loadPaths ::
-     (MonadIO m, MonadState (AppState RenderState) m) => [FilePath] -> m ()
+loadPaths :: (MonadIO m, MonadState AppState m) => [FilePath] -> m ()
 loadPaths [] = do
   deleteMeshSequence =<< gets (renderStateMeshes . appRenderState)
   appRenderStateL .= initRenderState
@@ -46,13 +45,13 @@ loadPaths [path] = do
         return ad
 loadPaths _ = liftIO (putStrLn "Need exactly one file argument.")
 
-reloadShader :: (MonadIO m, MonadState (AppState RenderState) m) => m ()
+reloadShader :: (MonadIO m, MonadState AppState m) => m ()
 reloadShader = do
   oldStateShader <- gets (renderStateShader . appRenderState)
   newStateShader <- loadShader oldStateShader
   appRenderStateL . renderStateShaderL .= newStateShader
 
-eventLoop :: SDL.Window -> ExceptT () (StateT (AppState RenderState) IO) ()
+eventLoop :: SDL.Window -> ExceptT () (StateT AppState IO) ()
 eventLoop win = forever $ do
   mapM_ (handleEvent win) =<< SDL.pollEvents
   appWinSizeL <~ fmap fromIntegral <$> SDL.glGetDrawableSize win
@@ -66,7 +65,7 @@ eventLoop win = forever $ do
 
 -- TODO: Put Window in AppState
 handleEvent ::
-     (MonadIO m, MonadState (AppState RenderState) m, MonadError () m)
+     (MonadIO m, MonadState AppState m, MonadError () m)
   => SDL.Window
   -> SDL.Event
   -> m ()
@@ -117,7 +116,7 @@ handleEvent _
 handleEvent _ SDL.Event {SDL.eventPayload = SDL.QuitEvent} = throwError ()
 handleEvent _ _ = return ()
 
-integrateState :: Double -> AppState rs -> AppState rs
+integrateState :: Double -> AppState -> AppState
 integrateState currentTime st@AppState {appViewState = vs@ViewState {..}, ..} =
   st
   { appViewState =

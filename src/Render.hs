@@ -22,7 +22,7 @@ import AppState (AppState(..), ViewState(..))
 import Render.Types
        (MeshDescriptor(..), RenderState(..), ShaderDescriptor(..))
 
-render :: MonadIO io => AppState RenderState -> io ()
+render :: MonadIO io => AppState -> io ()
 render AppState {appRenderState = RenderState {renderStateMeshes = MeshDescriptor{..}, ..}, ..} =
   liftIO $ do
     GL.viewport $=
