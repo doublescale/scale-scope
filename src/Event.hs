@@ -5,7 +5,7 @@ module Event
   ) where
 
 import qualified Codec.Compression.Zlib as Zlib
-import Control.Lens ((%=), (*=), (+=), (-=), (.=), (<~), (^.))
+import Control.Lens ((%=), (*=), (+=), (.=), (<~), (^.))
 import Control.Monad (forever)
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -128,7 +128,7 @@ handleAction FullscreenToggle = do
     case windowMode of
       SDL.Windowed -> SDL.setWindowMode win SDL.FullscreenDesktop
       _ -> SDL.setWindowMode win SDL.Windowed
-handleAction (FrameSkip d) = appFrameL -= d
+handleAction (FrameSkip d) = appFrameL += d
 handleAction SpeedReset = appFrameRateFactorL .= 1
 handleAction (SpeedMultiply d) = appFrameRateFactorL *= d
 handleAction Quit = throwError ()
