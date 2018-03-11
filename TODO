@@ -2,7 +2,6 @@
 - reimplement focus selection
 - center camera and set distance based on bounding box
 - keyboard camera controls
-- extract actions out of event handler
 - make key-bindings configurable
 - specular shading, specular maps, bump maps
 - allow single-precision floats in binary file
