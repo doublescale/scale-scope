@@ -22,24 +22,21 @@ import Mesh (AnimationData(..))
 import Render (RenderState(..), render)
 import Render.Mesh (deleteMeshSequence, loadMeshSequence)
 import Render.Shader (loadShader)
-import Render.Types (initRenderState)
+import Render.Types
+       (initRenderState, renderStateMeshesL, renderStateShaderL)
 import SerializeHalf ()
 
 loadPaths ::
      (MonadIO m, MonadState (AppState RenderState) m) => [FilePath] -> m ()
 loadPaths [] = do
   deleteMeshSequence =<< gets (renderStateMeshes . appRenderState)
-  modify (\st -> st {appRenderState = initRenderState})
+  appRenderStateL .= initRenderState
 loadPaths [path] = do
   deleteMeshSequence =<< gets (renderStateMeshes . appRenderState)
   animData <- loadAnimationFile path
-  newStateMesh <- loadMeshSequence animData
-  modify
-    (\st ->
-       st
-       { appRenderState = (appRenderState st) {renderStateMeshes = newStateMesh}
-       , appFrameRate = animationFramerate animData
-       })
+  newMeshSequence <- loadMeshSequence animData
+  appRenderStateL . renderStateMeshesL .= newMeshSequence
+  appFrameRateL .= animationFramerate animData
   where
     loadAnimationFile file =
       liftIO $ do
@@ -52,12 +49,7 @@ reloadShader :: (MonadIO m, MonadState (AppState RenderState) m) => m ()
 reloadShader = do
   oldStateShader <- gets (renderStateShader . appRenderState)
   newStateShader <- loadShader oldStateShader
-  modify
-    (\st ->
-       st
-       { appRenderState =
-           (appRenderState st) {renderStateShader = newStateShader}
-       })
+  appRenderStateL . renderStateShaderL .= newStateShader
 
 eventLoop :: SDL.Window -> ExceptT () (StateT (AppState RenderState) IO) ()
 eventLoop win = forever $ do

@@ -1,12 +1,19 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module Render.Types
   ( RenderState(..)
+  , renderStateMeshesL
+  , renderStateShaderL
   , MeshDescriptor(..)
   , ShaderDescriptor(..)
   , initRenderState
   ) where
 
+import Control.Lens (makeLensesWith)
 import qualified Data.Vector as V
 import qualified Graphics.Rendering.OpenGL.GL as GL
+
+import Util (suffixedLRule)
 
 data RenderState = RenderState
   { renderStateMeshes :: MeshDescriptor
@@ -25,6 +32,8 @@ data ShaderDescriptor = ShaderDescriptor
   , shaderModelMat :: GL.UniformLocation
   , shaderViewMat :: GL.UniformLocation
   }
+
+makeLensesWith suffixedLRule ''RenderState
 
 initRenderState :: RenderState
 initRenderState =
