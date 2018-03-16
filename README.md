@@ -51,6 +51,7 @@ Interactive commands:
 | LMB drag          | Rotate view           |
 | Scroll / MMB drag | Zoom view             |
 | Escape            | Exit                  |
+| PgUp PgDown       | Move view up/down     |
 | P                 | Toggle pause          |
 | J K               | Step back/forward     |
 | U I               | Playback rate up/down |

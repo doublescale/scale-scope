@@ -14,7 +14,7 @@ import Data.Bool (bool)
 import qualified Data.ByteString.Lazy.Char8 as BSL
 import Data.Maybe (mapMaybe)
 import qualified Data.Store as Store
-import Linear (V2(V2), (*^), (^/), _y)
+import Linear (V2(V2), V3(V3), (*^), (^/), _y)
 import qualified SDL
 
 import Action (AppAction(..))
@@ -103,6 +103,8 @@ eventToAction SDL.Event
     (SDL.KeycodeRight, _) -> Just (CamRotate (V2 (-5) 0))
     (SDL.KeycodeDown, _) -> Just (CamRotate (V2 0 (-5)))
     (SDL.KeycodeUp, _) -> Just (CamRotate (V2 0 5))
+    (SDL.KeycodePageDown, _) -> Just (CamMove (V3 0 0 (-0.25)))
+    (SDL.KeycodePageUp, _) -> Just (CamMove (V3 0 0 0.25))
     (SDL.KeycodeJ, _) -> Just (FrameSkip (-1))
     (SDL.KeycodeComma, _) -> Just (FrameSkip (-1))
     (SDL.KeycodeK, _) -> Just (FrameSkip 1)
@@ -128,6 +130,7 @@ handleAction ::
      (MonadIO m, MonadState AppState m, MonadError () m) => AppAction -> m ()
 handleAction (CamDistance d) = appViewStateL . viewCamDistanceVelL += d
 handleAction (CamRotate d) = appViewStateL . viewCamAngleVelL += d
+handleAction (CamMove d) = appViewStateL . viewSamplePosL += d
 handleAction PauseToggle = appPausedL %= not
 handleAction ShaderReload = reloadShader
 handleAction FullscreenToggle = do
