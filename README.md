@@ -52,9 +52,9 @@ Interactive commands:
 | Scroll / MMB drag | Zoom view             |
 | Escape            | Exit                  |
 | P                 | Toggle pause          |
-| , .               | Step back/forward     |
-| [ ]               | Playback rate up/down |
-| \                 | Reverse playback      |
+| J K               | Step back/forward     |
+| U I               | Playback rate up/down |
+| O                 | Reverse playback      |
 | F5                | Reload shaders        |
 | F11               | Toggle fullscreen     |
 

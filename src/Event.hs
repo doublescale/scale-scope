@@ -97,15 +97,24 @@ eventToAction SDL.Event
     , SDL.keyboardEventRepeat
     }
   } = case (keysymKeycode, keyboardEventRepeat) of
-    (SDL.KeycodeP, False) -> Just PauseToggle
     (SDL.KeycodeF5, False) -> Just ShaderReload
     (SDL.KeycodeF11, False) -> Just FullscreenToggle
-    (SDL.KeycodePeriod, _) -> Just (FrameSkip 1)
+    (SDL.KeycodeLeft, _) -> Just (CamRotate (V2 5 0))
+    (SDL.KeycodeRight, _) -> Just (CamRotate (V2 (-5) 0))
+    (SDL.KeycodeDown, _) -> Just (CamRotate (V2 0 (-5)))
+    (SDL.KeycodeUp, _) -> Just (CamRotate (V2 0 5))
+    (SDL.KeycodeJ, _) -> Just (FrameSkip (-1))
     (SDL.KeycodeComma, _) -> Just (FrameSkip (-1))
+    (SDL.KeycodeK, _) -> Just (FrameSkip 1)
+    (SDL.KeycodePeriod, _) -> Just (FrameSkip 1)
     (SDL.KeycodeBackspace, _) -> Just SpeedReset
     (SDL.KeycodeLeftBracket, _) -> Just (SpeedMultiply (recip 1.125))
+    (SDL.KeycodeU, _) -> Just (SpeedMultiply (recip 1.125))
     (SDL.KeycodeRightBracket, _) -> Just (SpeedMultiply 1.125)
+    (SDL.KeycodeI, _) -> Just (SpeedMultiply 1.125)
     (SDL.KeycodeBackslash, _) -> Just (SpeedMultiply (-1))
+    (SDL.KeycodeO, _) -> Just (SpeedMultiply (-1))
+    (SDL.KeycodeP, False) -> Just PauseToggle
     (SDL.KeycodeEscape, _) -> Just Quit
     _ -> Nothing
 eventToAction SDL.Event
