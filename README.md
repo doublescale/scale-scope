@@ -1,5 +1,5 @@
 # scale-scope
-View 3D models and sequences interactively.
+View 3D models and animation sequences interactively.
 
 ![Screenshot](screenshot.png)
 
@@ -46,16 +46,16 @@ drag&drop onto its window.
 
 Interactive commands:
 
-| Key | Action |
-| --- | ------ |
-| LMB drag | Rotate view |
-| Scroll / MMB drag | Zoom view |
-| Escape | Exit |
-| P | Toggle pause |
-| , . | Step back/forward |
-| [ ] | Playback rate up/down |
-| \ | Reverse playback |
-| F5 | Reload shaders |
-| F11 | Toggle fullscreen |
+| Key               | Action                |
+| ----------------- | --------------------- |
+| LMB drag          | Rotate view           |
+| Scroll / MMB drag | Zoom view             |
+| Escape            | Exit                  |
+| P                 | Toggle pause          |
+| , .               | Step back/forward     |
+| [ ]               | Playback rate up/down |
+| \                 | Reverse playback      |
+| F5                | Reload shaders        |
+| F11               | Toggle fullscreen     |
 
 (LMB, MMB, RMB stand for left/middle/right mouse button)
