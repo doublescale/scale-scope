@@ -54,9 +54,8 @@ reloadShader = do
   newStateShader <- loadShader oldStateShader
   appRenderStateL . renderStateShaderL .= newStateShader
 
-eventLoop ::
-     (MonadIO m, MonadState AppState m, MonadError () m) => SDL.Window -> m ()
-eventLoop win =
+eventLoop :: (MonadIO m, MonadState AppState m, MonadError () m) => m ()
+eventLoop =
   forever $ do
     eventActions <- mapMaybe eventToAction <$> SDL.pollEvents
     modState <- fromKeyModifier <$> SDL.getModState
@@ -64,6 +63,7 @@ eventLoop win =
       keysToActions (1 / 60) modState <$> SDL.getKeyboardState
     mapM_ handleAction (eventActions ++ continuousActions)
     handleMouseMode
+    win <- gets appWindow
     appWinSizeL <~ fmap fromIntegral <$> SDL.glGetDrawableSize win
     modify . integrateState =<< SDL.time
     render =<< get

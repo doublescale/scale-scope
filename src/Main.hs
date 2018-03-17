@@ -24,7 +24,7 @@ runWithFiles files =
     runAppStack (initState win startTime) $ do
       loadPaths files
       reloadShader
-      eventLoop win
+      eventLoop
 
 runAppStack :: AppState -> ExceptT () (StateT AppState IO) () -> IO ()
 runAppStack startState app = void (execStateT (runExceptT app) startState)
