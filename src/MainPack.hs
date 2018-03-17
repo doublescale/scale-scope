@@ -12,8 +12,7 @@ import qualified Data.Store as Store
 import qualified Options.Applicative as O
 
 import Mesh (AnimationData(..), RGBGrid(..), RGBGrid)
-import MeshConversion
-       (objToPolyMeshSequence, triangulateMeshSequence)
+import MeshConversion (objToPolyMeshSequence, triangulateMeshSequence)
 import OBJParser (parseOBJ)
 
 data Options = Options
@@ -62,12 +61,13 @@ packObjFiles Options {..} = do
     forM optInFiles $ \file -> do
       putStrLn ("Loading " ++ show file)
       parseOBJ <$> BSL.readFile file
-  textureRGBData <- case optTextureFile of
-    Nothing -> return Nothing
-    Just textureFile -> do
-      -- TODO: Handle Left
-      Right rgbData <- readTextureFile textureFile
-      return (Just rgbData)
+  textureRGBData <-
+    case optTextureFile of
+      Nothing -> return Nothing
+      Just textureFile -> do
+        Right rgbData <- readTextureFile textureFile
+        -- TODO: Handle Left
+        return (Just rgbData)
   let animationData =
         AnimationData
         { animationFramerate = optFramerate
@@ -88,7 +88,4 @@ readTextureFile path = do
     toPixelGrid :: JP.Image JP.PixelRGB8 -> RGBGrid
     toPixelGrid JP.Image {JP.imageWidth, JP.imageHeight, JP.imageData} =
       RGBGrid
-      { gridWidth = imageWidth
-      , gridHeight = imageHeight
-      , gridPixels = imageData
-      }
+      {gridWidth = imageWidth, gridHeight = imageHeight, gridPixels = imageData}

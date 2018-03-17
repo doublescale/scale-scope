@@ -11,8 +11,7 @@ import qualified Graphics.Rendering.OpenGL.GL as GL
 import Mesh (RGBGrid(..))
 
 loadTexture :: MonadIO io => Maybe RGBGrid -> io GL.TextureObject
-loadTexture textureRGBData =
-  liftIO (load (fromMaybe whiteGrid textureRGBData))
+loadTexture textureRGBData = liftIO (load (fromMaybe whiteGrid textureRGBData))
   where
     whiteGrid =
       RGBGrid {gridWidth = 1, gridHeight = 1, gridPixels = VS.replicate 3 255}

@@ -21,8 +21,12 @@ import Linear.V (Dim, V, dim, reflectDim, toV)
 import Numeric.Half (Half)
 
 import Mesh
-       (AnimationData(..), MeshConstant(..), MeshFrame(..),
-        MeshSequence(..), TriFaces)
+  ( AnimationData(..)
+  , MeshConstant(..)
+  , MeshFrame(..)
+  , MeshSequence(..)
+  , TriFaces
+  )
 import Render.Texture (loadTexture)
 import Render.Types (MeshDescriptor(..))
 

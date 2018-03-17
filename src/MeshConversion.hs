@@ -15,8 +15,12 @@ import Linear (Epsilon, V2(V2), V3(V3), cross, normalize)
 import Numeric.Half (Half, toHalf)
 
 import Mesh
-       (MeshConstant(..), MeshFrame(..), MeshSequence(..), PolyFaces,
-        TriFaces)
+  ( MeshConstant(..)
+  , MeshFrame(..)
+  , MeshSequence(..)
+  , PolyFaces
+  , TriFaces
+  )
 import OBJParser (FaceEntry(..), OBJLine(..))
 
 objToPolyMeshSequence :: [[OBJLine]] -> MeshSequence Double PolyFaces
@@ -47,8 +51,8 @@ objToPolyMesh objLines =
     origFaces = V.map (VG.map (pred . posIdx)) (VG.fromList faceLines)
     origFacesAndUvs =
       [ [ (posIdx - 1, fromMaybe 0 uvIdx)
-      | FaceEntry {posIdx, uvIdx} <- VG.toList entries
-      ]
+        | FaceEntry {posIdx, uvIdx} <- VG.toList entries
+        ]
       | entries <- faceLines
       ]
     origUvs = VG.fromList (V2 0 0 : [uv | UvLine uv <- objLines])

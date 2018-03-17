@@ -20,13 +20,12 @@ import qualified SDL
 
 import Action (AppAction(..))
 import AppState
-import Mesh (AnimationData(..))
 import Event.ModState
+import Mesh (AnimationData(..))
 import Render (RenderState(..), render)
 import Render.Mesh (deleteMeshSequence, loadMeshSequence)
 import Render.Shader (loadShader)
-import Render.Types
-       (initRenderState, renderStateMeshesL, renderStateShaderL)
+import Render.Types (initRenderState, renderStateMeshesL, renderStateShaderL)
 import Util (fromCString)
 
 loadPaths :: (MonadIO m, MonadState AppState m) => [FilePath] -> m ()

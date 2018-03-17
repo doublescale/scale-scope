@@ -37,18 +37,19 @@ loadShader maybeShaderDescriptor =
 
 -- TODO: Get file contents, not file paths as parameters.
 compileShader :: [(GL.ShaderType, FilePath)] -> IO (Either String GL.Program)
-compileShader shaderDescs = runExceptT $ do
-  program <- liftIO GL.createProgram
-  forM_ shaderDescs $ \(typ, path) -> do
-    shader <- liftIO (GL.createShader typ)
-    source <- liftIO (readFile path)
-    liftIO (GL.shaderSourceBS shader $= GL.packUtf8 source)
-    liftIO (GL.compileShader shader)
-    check shader GL.compileStatus GL.shaderInfoLog path
-    liftIO (GL.attachShader program shader)
-  liftIO (GL.linkProgram program)
-  check program GL.linkStatus GL.programInfoLog "linking"
-  return program
+compileShader shaderDescs =
+  runExceptT $ do
+    program <- liftIO GL.createProgram
+    forM_ shaderDescs $ \(typ, path) -> do
+      shader <- liftIO (GL.createShader typ)
+      source <- liftIO (readFile path)
+      liftIO (GL.shaderSourceBS shader $= GL.packUtf8 source)
+      liftIO (GL.compileShader shader)
+      check shader GL.compileStatus GL.shaderInfoLog path
+      liftIO (GL.attachShader program shader)
+    liftIO (GL.linkProgram program)
+    check program GL.linkStatus GL.programInfoLog "linking"
+    return program
   where
     check object status info msg = do
       ok <- GL.get (status object)
