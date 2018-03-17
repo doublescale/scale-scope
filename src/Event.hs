@@ -92,32 +92,32 @@ eventToAction SDL.Event
   } = Just (CamDistance (-fromIntegral dy))
 eventToAction SDL.Event
   { SDL.eventPayload = SDL.KeyboardEvent SDL.KeyboardEventData
-    { SDL.keyboardEventKeysym = SDL.Keysym {SDL.keysymKeycode}
+    { SDL.keyboardEventKeysym = SDL.Keysym {SDL.keysymScancode}
     , SDL.keyboardEventKeyMotion = SDL.Pressed
     , SDL.keyboardEventRepeat
     }
-  } = case (keysymKeycode, keyboardEventRepeat) of
-    (SDL.KeycodeF5, False) -> Just ShaderReload
-    (SDL.KeycodeF11, False) -> Just FullscreenToggle
-    (SDL.KeycodeLeft, _) -> Just (CamRotate (V2 5 0))
-    (SDL.KeycodeRight, _) -> Just (CamRotate (V2 (-5) 0))
-    (SDL.KeycodeDown, _) -> Just (CamRotate (V2 0 (-5)))
-    (SDL.KeycodeUp, _) -> Just (CamRotate (V2 0 5))
-    (SDL.KeycodePageDown, _) -> Just (CamMove (V3 0 0 (-0.25)))
-    (SDL.KeycodePageUp, _) -> Just (CamMove (V3 0 0 0.25))
-    (SDL.KeycodeJ, _) -> Just (FrameSkip (-1))
-    (SDL.KeycodeComma, _) -> Just (FrameSkip (-1))
-    (SDL.KeycodeK, _) -> Just (FrameSkip 1)
-    (SDL.KeycodePeriod, _) -> Just (FrameSkip 1)
-    (SDL.KeycodeBackspace, _) -> Just SpeedReset
-    (SDL.KeycodeLeftBracket, _) -> Just (SpeedMultiply (recip 1.125))
-    (SDL.KeycodeU, _) -> Just (SpeedMultiply (recip 1.125))
-    (SDL.KeycodeRightBracket, _) -> Just (SpeedMultiply 1.125)
-    (SDL.KeycodeI, _) -> Just (SpeedMultiply 1.125)
-    (SDL.KeycodeBackslash, _) -> Just (SpeedMultiply (-1))
-    (SDL.KeycodeO, _) -> Just (SpeedMultiply (-1))
-    (SDL.KeycodeP, False) -> Just PauseToggle
-    (SDL.KeycodeEscape, _) -> Just Quit
+  } = case (keysymScancode, keyboardEventRepeat) of
+    (SDL.ScancodeF5, False) -> Just ShaderReload
+    (SDL.ScancodeF11, False) -> Just FullscreenToggle
+    (SDL.ScancodeLeft, _) -> Just (CamRotate (V2 5 0))
+    (SDL.ScancodeRight, _) -> Just (CamRotate (V2 (-5) 0))
+    (SDL.ScancodeDown, _) -> Just (CamRotate (V2 0 (-5)))
+    (SDL.ScancodeUp, _) -> Just (CamRotate (V2 0 5))
+    (SDL.ScancodePageDown, _) -> Just (CamMove (V3 0 0 (-0.25)))
+    (SDL.ScancodePageUp, _) -> Just (CamMove (V3 0 0 0.25))
+    (SDL.ScancodeJ, _) -> Just (FrameSkip (-1))
+    (SDL.ScancodeComma, _) -> Just (FrameSkip (-1))
+    (SDL.ScancodeK, _) -> Just (FrameSkip 1)
+    (SDL.ScancodePeriod, _) -> Just (FrameSkip 1)
+    (SDL.ScancodeBackspace, _) -> Just SpeedReset
+    (SDL.ScancodeLeftBracket, _) -> Just (SpeedMultiply (recip 1.125))
+    (SDL.ScancodeU, _) -> Just (SpeedMultiply (recip 1.125))
+    (SDL.ScancodeRightBracket, _) -> Just (SpeedMultiply 1.125)
+    (SDL.ScancodeI, _) -> Just (SpeedMultiply 1.125)
+    (SDL.ScancodeBackslash, _) -> Just (SpeedMultiply (-1))
+    (SDL.ScancodeO, _) -> Just (SpeedMultiply (-1))
+    (SDL.ScancodeP, False) -> Just PauseToggle
+    (SDL.ScancodeEscape, _) -> Just Quit
     _ -> Nothing
 eventToAction SDL.Event
   { SDL.eventPayload = SDL.DropEvent SDL.DropEventData
