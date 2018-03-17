@@ -1,7 +1,11 @@
-- streaming file loading
-- reimplement focus selection
-- center camera and set distance based on bounding box
-- keyboard camera controls
+- relative camera moving (unproject using view matrices?)
+- click-to-focus (query depth under cursor, unproject)
+- continuous keyboard input (check state of scancodes? *dt)
 - make key-bindings configurable
+- center camera and set distance based on bounding box
+- hardcode shaders as a fallback if shaders/ doesn't exist
+- factor out view-motion integration (FRP?)
 - specular shading, specular maps, bump maps
-- allow single-precision floats in binary file
+- multiple objects/textures
+- loading screen
+- consider using Accelerate for normals and skeletal deform
