@@ -18,3 +18,4 @@ data AppAction
   | FileLoad FilePath
   | ShaderReload
   | Quit
+  deriving (Show)

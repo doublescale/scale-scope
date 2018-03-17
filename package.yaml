@@ -62,6 +62,7 @@ executables:
       - Action
       - AppState
       - Event
+      - Event.ModState
       - Mesh
       - Render
       - Render.Mesh

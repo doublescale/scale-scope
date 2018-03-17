@@ -1,6 +1,5 @@
 - relative camera moving (unproject using view matrices?)
 - click-to-focus (query depth under cursor, unproject)
-- continuous keyboard input (check state of scancodes? *dt)
 - make key-bindings configurable
 - center camera and set distance based on bounding box
 - hardcode shaders as a fallback if shaders/ doesn't exist

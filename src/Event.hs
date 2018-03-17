@@ -6,12 +6,13 @@ module Event
 
 import qualified Codec.Compression.Zlib as Zlib
 import Control.Lens ((%=), (*=), (+=), (.=), (<~), (^.))
-import Control.Monad (forever)
+import Control.Monad (forever, guard)
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State (MonadState, get, gets, modify)
 import Data.Bool (bool)
 import qualified Data.ByteString.Lazy.Char8 as BSL
+import Data.Functor (($>))
 import Data.Maybe (mapMaybe)
 import qualified Data.Store as Store
 import Linear (V2(V2), V3(V3), (*^), (^/), _y)
@@ -20,6 +21,7 @@ import qualified SDL
 import Action (AppAction(..))
 import AppState
 import Mesh (AnimationData(..))
+import Event.ModState
 import Render (RenderState(..), render)
 import Render.Mesh (deleteMeshSequence, loadMeshSequence)
 import Render.Shader (loadShader)
@@ -56,8 +58,11 @@ eventLoop ::
      (MonadIO m, MonadState AppState m, MonadError () m) => SDL.Window -> m ()
 eventLoop win =
   forever $ do
-    actions <- mapMaybe eventToAction <$> SDL.pollEvents
-    mapM_ handleAction actions
+    eventActions <- mapMaybe eventToAction <$> SDL.pollEvents
+    modState <- fromKeyModifier <$> SDL.getModState
+    continuousActions <-
+      keysToActions (1 / 60) modState <$> SDL.getKeyboardState
+    mapM_ handleAction (eventActions ++ continuousActions)
     handleMouseMode
     appWinSizeL <~ fmap fromIntegral <$> SDL.glGetDrawableSize win
     modify . integrateState =<< SDL.time
@@ -96,28 +101,22 @@ eventToAction SDL.Event
     , SDL.keyboardEventKeyMotion = SDL.Pressed
     , SDL.keyboardEventRepeat
     }
-  } = case (keysymScancode, keyboardEventRepeat) of
-    (SDL.ScancodeF5, False) -> Just ShaderReload
-    (SDL.ScancodeF11, False) -> Just FullscreenToggle
-    (SDL.ScancodeLeft, _) -> Just (CamRotate (V2 5 0))
-    (SDL.ScancodeRight, _) -> Just (CamRotate (V2 (-5) 0))
-    (SDL.ScancodeDown, _) -> Just (CamRotate (V2 0 (-5)))
-    (SDL.ScancodeUp, _) -> Just (CamRotate (V2 0 5))
-    (SDL.ScancodePageDown, _) -> Just (CamMove (V3 0 0 (-0.25)))
-    (SDL.ScancodePageUp, _) -> Just (CamMove (V3 0 0 0.25))
-    (SDL.ScancodeJ, _) -> Just (FrameSkip (-1))
-    (SDL.ScancodeComma, _) -> Just (FrameSkip (-1))
-    (SDL.ScancodeK, _) -> Just (FrameSkip 1)
-    (SDL.ScancodePeriod, _) -> Just (FrameSkip 1)
-    (SDL.ScancodeBackspace, _) -> Just SpeedReset
-    (SDL.ScancodeLeftBracket, _) -> Just (SpeedMultiply (recip 1.125))
-    (SDL.ScancodeU, _) -> Just (SpeedMultiply (recip 1.125))
-    (SDL.ScancodeRightBracket, _) -> Just (SpeedMultiply 1.125)
-    (SDL.ScancodeI, _) -> Just (SpeedMultiply 1.125)
-    (SDL.ScancodeBackslash, _) -> Just (SpeedMultiply (-1))
-    (SDL.ScancodeO, _) -> Just (SpeedMultiply (-1))
-    (SDL.ScancodeP, False) -> Just PauseToggle
-    (SDL.ScancodeEscape, _) -> Just Quit
+  } = case keysymScancode of
+    SDL.ScancodeF5 -> guard (not keyboardEventRepeat) $> ShaderReload
+    SDL.ScancodeF11 -> guard (not keyboardEventRepeat) $> FullscreenToggle
+    SDL.ScancodeJ -> Just (FrameSkip (-1))
+    SDL.ScancodeComma -> Just (FrameSkip (-1))
+    SDL.ScancodeK -> Just (FrameSkip 1)
+    SDL.ScancodePeriod -> Just (FrameSkip 1)
+    SDL.ScancodeBackspace -> Just SpeedReset
+    SDL.ScancodeLeftBracket -> Just (SpeedMultiply (recip 1.125))
+    SDL.ScancodeU -> Just (SpeedMultiply (recip 1.125))
+    SDL.ScancodeRightBracket -> Just (SpeedMultiply 1.125)
+    SDL.ScancodeI -> Just (SpeedMultiply 1.125)
+    SDL.ScancodeBackslash -> Just (SpeedMultiply (-1))
+    SDL.ScancodeO -> Just (SpeedMultiply (-1))
+    SDL.ScancodeP -> Just PauseToggle
+    SDL.ScancodeEscape -> Just Quit
     _ -> Nothing
 eventToAction SDL.Event
   { SDL.eventPayload = SDL.DropEvent SDL.DropEventData
@@ -125,6 +124,18 @@ eventToAction SDL.Event
   } = Just (FileLoad (fromCString dropData))
 eventToAction SDL.Event {SDL.eventPayload = SDL.QuitEvent} = Just Quit
 eventToAction _ = Nothing
+
+keysToActions :: Double -> ModState -> (SDL.Scancode -> Bool) -> [AppAction]
+keysToActions dt (ModState False False False) keyState =
+  concat
+    [ [CamRotate (dt *^ V2 200 0) | keyState SDL.ScancodeLeft]
+    , [CamRotate (dt *^ V2 (-200) 0) | keyState SDL.ScancodeRight]
+    , [CamRotate (dt *^ V2 0 200) | keyState SDL.ScancodeUp]
+    , [CamRotate (dt *^ V2 0 (-200)) | keyState SDL.ScancodeDown]
+    , [CamMove (dt *^ V3 0 0 (-5)) | keyState SDL.ScancodePageDown]
+    , [CamMove (dt *^ V3 0 0 5) | keyState SDL.ScancodePageUp]
+    ]
+keysToActions _ _ _ = []
 
 handleAction ::
      (MonadIO m, MonadState AppState m, MonadError () m) => AppAction -> m ()
