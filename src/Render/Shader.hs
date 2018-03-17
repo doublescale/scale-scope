@@ -7,6 +7,7 @@ import Control.Monad.Except (runExceptT, throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Graphics.Rendering.OpenGL.GL (($=))
 import qualified Graphics.Rendering.OpenGL.GL as GL
+import qualified Data.ByteString.Lazy as BSL
 
 import Render.Types (ShaderDescriptor(..))
 
@@ -14,10 +15,12 @@ loadShader ::
      MonadIO io => Maybe ShaderDescriptor -> io (Maybe ShaderDescriptor)
 loadShader maybeShaderDescriptor =
   liftIO $ do
+    vertexShaderSource <- BSL.readFile "shader/simple.vs"
+    fragmentShaderSource <- BSL.readFile "shader/simple.fs"
     errorOrProgram <-
       compileShader
-        [ (GL.VertexShader, "shader/simple.vs")
-        , (GL.FragmentShader, "shader/simple.fs")
+        [ (GL.VertexShader, vertexShaderSource)
+        , (GL.FragmentShader, fragmentShaderSource)
         ]
     case errorOrProgram of
       Left err -> putStrLn err >> return maybeShaderDescriptor
@@ -35,17 +38,16 @@ loadShader maybeShaderDescriptor =
              , shaderViewMat
              })
 
--- TODO: Get file contents, not file paths as parameters.
-compileShader :: [(GL.ShaderType, FilePath)] -> IO (Either String GL.Program)
-compileShader shaderDescs =
+compileShader ::
+     [(GL.ShaderType, BSL.ByteString)] -> IO (Either String GL.Program)
+compileShader shaderDescriptors =
   runExceptT $ do
     program <- liftIO GL.createProgram
-    forM_ shaderDescs $ \(typ, path) -> do
-      shader <- liftIO (GL.createShader typ)
-      source <- liftIO (readFile path)
-      liftIO (GL.shaderSourceBS shader $= GL.packUtf8 source)
+    forM_ shaderDescriptors $ \(shaderType, shaderSource) -> do
+      shader <- liftIO (GL.createShader shaderType)
+      liftIO (GL.shaderSourceBS shader $= BSL.toStrict shaderSource)
       liftIO (GL.compileShader shader)
-      check shader GL.compileStatus GL.shaderInfoLog path
+      check shader GL.compileStatus GL.shaderInfoLog (show shaderType)
       liftIO (GL.attachShader program shader)
     liftIO (GL.linkProgram program)
     check program GL.linkStatus GL.programInfoLog "linking"
