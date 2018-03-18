@@ -1,6 +1,5 @@
 module Event
   ( loadPaths
-  , reloadShader
   , eventLoop
   ) where
 
@@ -20,13 +19,13 @@ import qualified SDL
 
 import Action (AppAction(..))
 import AppState
-import Event.ModState
+import Event.ModState (ModState(ModState), fromKeyModifier)
 import Mesh (AnimationData(..))
 import Render (RenderState(..), render)
 import Render.Mesh (deleteMeshSequence, loadMeshSequence)
-import Render.Shader (loadShader)
+import Render.Shader (reloadShader)
 import Render.Types (initRenderState, renderStateMeshesL, renderStateShaderL)
-import Util (fromCString)
+import Util (fromCString, modifyingM)
 
 loadPaths :: (MonadIO m, MonadState AppState m) => [FilePath] -> m ()
 loadPaths [] = do
@@ -46,12 +45,6 @@ loadPaths [path] = do
           Right animData -> return animData
           Left err -> error (show err)
 loadPaths _ = liftIO (putStrLn "Need exactly one file argument.")
-
-reloadShader :: (MonadIO m, MonadState AppState m) => m ()
-reloadShader = do
-  oldStateShader <- gets (renderStateShader . appRenderState)
-  newStateShader <- loadShader oldStateShader
-  appRenderStateL . renderStateShaderL .= newStateShader
 
 eventLoop :: (MonadIO m, MonadState AppState m, MonadError () m) => m ()
 eventLoop =
@@ -142,7 +135,8 @@ handleAction (CamDistance d) = appViewStateL . viewCamDistanceVelL += d
 handleAction (CamRotate d) = appViewStateL . viewCamAngleVelL += d
 handleAction (CamMove d) = appViewStateL . viewSamplePosL += d
 handleAction PauseToggle = appPausedL %= not
-handleAction ShaderReload = reloadShader
+handleAction ShaderReload =
+  modifyingM (appRenderStateL . renderStateShaderL) reloadShader
 handleAction FullscreenToggle = do
   win <- gets appWindow
   liftIO $ do

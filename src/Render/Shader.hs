@@ -1,5 +1,5 @@
 module Render.Shader
-  ( loadShader
+  ( reloadShader
   ) where
 
 import Control.Monad (forM_, unless)
@@ -11,9 +11,9 @@ import qualified Data.ByteString.Lazy as BSL
 
 import Render.Types (ShaderDescriptor(..))
 
-loadShader ::
+reloadShader ::
      MonadIO io => Maybe ShaderDescriptor -> io (Maybe ShaderDescriptor)
-loadShader maybeShaderDescriptor =
+reloadShader maybeOldDescriptor =
   liftIO $ do
     vertexShaderSource <- BSL.readFile "shader/simple.vs"
     fragmentShaderSource <- BSL.readFile "shader/simple.fs"
@@ -23,9 +23,9 @@ loadShader maybeShaderDescriptor =
         , (GL.FragmentShader, fragmentShaderSource)
         ]
     case errorOrProgram of
-      Left err -> putStrLn err >> return maybeShaderDescriptor
+      Left err -> putStrLn err >> return maybeOldDescriptor
       Right program -> do
-        mapM_ (GL.deleteObjectName . shaderProgram) maybeShaderDescriptor
+        mapM_ (GL.deleteObjectName . shaderProgram) maybeOldDescriptor
         shaderFrameTime <- GL.get $ GL.uniformLocation program "frame_t"
         shaderModelMat <- GL.get $ GL.uniformLocation program "model_mat"
         shaderViewMat <- GL.get $ GL.uniformLocation program "view_mat"

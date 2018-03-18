@@ -11,8 +11,13 @@ import qualified SDL
 import System.Environment (getArgs)
 
 import AppState (AppState(..), ViewState(..))
-import Event (eventLoop, loadPaths, reloadShader)
-import Render.Types (initRenderState)
+import Event (eventLoop, loadPaths)
+import Render.Shader (reloadShader)
+import Render.Types
+  ( RenderState(renderStateShader)
+  , ShaderDescriptor
+  , initRenderState
+  )
 
 main :: IO ()
 main = getArgs >>= runWithFiles
@@ -21,16 +26,16 @@ runWithFiles :: [FilePath] -> IO ()
 runWithFiles files =
   withWindow $ \win -> do
     startTime <- SDL.time
-    runAppStack (initState win startTime) $ do
+    shaderState <- reloadShader Nothing
+    runAppStack (initState win startTime shaderState) $ do
       loadPaths files
-      reloadShader
       eventLoop
 
 runAppStack :: AppState -> ExceptT () (StateT AppState IO) () -> IO ()
 runAppStack startState app = void (execStateT (runExceptT app) startState)
 
-initState :: SDL.Window -> Double -> AppState
-initState appWindow startTime =
+initState :: SDL.Window -> Double -> Maybe ShaderDescriptor -> AppState
+initState appWindow startTime shaderState =
   AppState
   { appWindow
   , appWinSize = V2 0 0
@@ -49,7 +54,7 @@ initState appWindow startTime =
       , viewCamPos = V3 0 0 2
       , viewSamplePos = V3 0 0 2
       }
-  , appRenderState = initRenderState
+  , appRenderState = initRenderState { renderStateShader = shaderState }
   }
 
 withWindow :: (SDL.Window -> IO ()) -> IO ()
