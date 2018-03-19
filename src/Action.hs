@@ -2,6 +2,7 @@ module Action
   ( AppAction(..)
   ) where
 
+import Data.Yaml (FromJSON, parseJSON)
 import Linear (V2, V3)
 
 type Scalar = Double
@@ -18,4 +19,7 @@ data AppAction
   | FileLoad FilePath
   | ShaderReload
   | Quit
-  deriving (Show)
+  deriving (Read, Show)
+
+instance FromJSON AppAction where
+  parseJSON = fmap read . parseJSON
