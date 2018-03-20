@@ -23,3 +23,7 @@ data AppAction
 
 instance FromJSON AppAction where
   parseJSON = fmap read . parseJSON
+
+-- TODO: Predicates for
+--        - isRepeating
+--        - isContinuous
