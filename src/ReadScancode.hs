@@ -1,10 +1,13 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module ReadScancode
   ( readScancode
   ) where
 
+import Data.Text (Text)
 import qualified SDL
 
-readScancode :: String -> Maybe SDL.Scancode
+readScancode :: Text -> Maybe SDL.Scancode
 readScancode x = case x of
   "0"            -> Just SDL.Scancode0
   "1"            -> Just SDL.Scancode1

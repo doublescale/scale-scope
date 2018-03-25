@@ -58,12 +58,14 @@ executables:
       - mtl
       - OpenGL
       - sdl2
+      - text
       - yaml
     other-modules:
       - Action
       - AppState
       - Event
       - Event.ModState
+      - InputMap
       - Mesh
       - ReadScancode
       - Render

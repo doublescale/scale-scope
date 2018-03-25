@@ -1,5 +1,7 @@
 module Action
   ( AppAction(..)
+  , isRepeating
+  , isContinuous
   ) where
 
 import Data.Yaml (FromJSON, parseJSON)
@@ -24,6 +26,15 @@ data AppAction
 instance FromJSON AppAction where
   parseJSON = fmap read . parseJSON
 
--- TODO: Predicates for
---        - isRepeating
---        - isContinuous
+isRepeating :: AppAction -> Bool
+isRepeating FullscreenToggle = False
+isRepeating ShaderReload = False
+isRepeating _ = True
+
+isContinuous :: AppAction -> Bool
+isContinuous (CamDistance _) = True
+isContinuous (CamRotate _) = True
+isContinuous (CamMove _) = True
+isContinuous _ = False
+
+-- scaleAction?  Like fmap but only for continuous actions?

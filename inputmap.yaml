@@ -1,0 +1,21 @@
+# MouseMotion:
+#   ButtonLeft:
+#     CamRotate (V2 0.5 0.5)
+#   ButtonMiddle:
+#     CamDistance 0.01
+# MouseWheel:
+#   ():
+#     CamDistance (-1)
+Keyboard:
+  Left: CamRotate (V2 1 0)
+  Right: CamRotate (V2 (-1) 0)
+  Up: CamRotate (V2 0 1)
+  Down: CamRotate (V2 0 (-1))
+  P: PauseToggle
+  Space: PauseToggle
+  U: SpeedMultiply 0.8
+  I: SpeedMultiply 1.25
+  Backspace: SpeedReset
+  Q: Quit
+  F5: ShaderReload
+  F11: FullscreenToggle
