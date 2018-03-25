@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module InputMap
   ( InputMap(..)
   , defaultInputMap
@@ -5,14 +7,23 @@ module InputMap
 
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
+import Data.Maybe (fromJust)
+import Data.Yaml (FromJSON, (.:), parseJSON, withObject)
 import GHC.Generics (Generic)
 import qualified SDL
 
 import Action
+import ReadScancode (readScancode)
 
 data InputMap = InputMap
   { keyboardMap :: Map SDL.Scancode AppAction
   } deriving (Generic, Show)
+
+instance FromJSON InputMap where
+  parseJSON = withObject "InputMap" $ \o -> do
+    keyboardMap <- Map.mapKeys (fromJust . readScancode) <$> o .: "Keyboard"
+    -- TODO: Handle Nothing
+    return InputMap {..}
 
 defaultInputMap :: InputMap
 defaultInputMap =

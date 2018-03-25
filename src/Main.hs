@@ -6,13 +6,15 @@ import Control.Exception (finally)
 import Control.Monad (void)
 import Control.Monad.Except (ExceptT, runExceptT)
 import Control.Monad.State (StateT, execStateT)
+import Data.Maybe (fromMaybe)
+import qualified Data.Yaml as Yaml
 import Linear (V2(V2), V3(V3))
 import qualified SDL
 import System.Environment (getArgs)
 
 import AppState (AppState(..), ViewState(..))
 import Event (eventLoop, loadPaths)
-import InputMap (defaultInputMap)
+import InputMap (InputMap, defaultInputMap)
 import Render.Shader (reloadShader)
 import Render.Types
   ( RenderState(renderStateShader)
@@ -28,15 +30,18 @@ runWithFiles files =
   withWindow $ \win -> do
     startTime <- SDL.time
     shaderState <- reloadShader Nothing
-    runAppStack (initState win startTime shaderState) $ do
+    -- TODO: Show warning on failed input-map decoding.
+    inputMap <- fromMaybe defaultInputMap <$> Yaml.decodeFile "inputmap.yaml"
+    runAppStack (initState win startTime shaderState inputMap) $ do
       loadPaths files
       eventLoop
 
 runAppStack :: AppState -> ExceptT () (StateT AppState IO) () -> IO ()
 runAppStack startState app = void (execStateT (runExceptT app) startState)
 
-initState :: SDL.Window -> Double -> Maybe ShaderDescriptor -> AppState
-initState appWindow startTime shaderState =
+initState ::
+     SDL.Window -> Double -> Maybe ShaderDescriptor -> InputMap -> AppState
+initState appWindow startTime shaderState inputMap =
   AppState
   { appWindow
   , appWinSize = V2 0 0
@@ -46,7 +51,7 @@ initState appWindow startTime shaderState =
   , appFrameRate = 0
   , appFrameRateFactor = 1
   , appTimePrev = startTime
-  , appInputMap = defaultInputMap
+  , appInputMap = inputMap
   , appViewState =
       ViewState
       { viewCamAngle = V2 0 0
@@ -56,7 +61,7 @@ initState appWindow startTime shaderState =
       , viewCamPos = V3 0 0 2
       , viewSamplePos = V3 0 0 2
       }
-  , appRenderState = initRenderState { renderStateShader = shaderState }
+  , appRenderState = initRenderState {renderStateShader = shaderState}
   }
 
 withWindow :: (SDL.Window -> IO ()) -> IO ()
