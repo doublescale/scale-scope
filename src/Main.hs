@@ -31,6 +31,9 @@ runWithFiles files =
     startTime <- SDL.time
     shaderState <- reloadShader Nothing
     -- TODO: Show warning on failed input-map decoding.
+    -- Idea: Load defaultInputMap at start, inside StateT try to load given file
+    -- (also make reload available as an action;
+    --  maybe queue up actions at the start?)
     inputMap <- fromMaybe defaultInputMap <$> Yaml.decodeFile "inputmap.yaml"
     runAppStack (initState win startTime shaderState inputMap) $ do
       loadPaths files
