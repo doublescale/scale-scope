@@ -6,6 +6,7 @@ import Control.Lens (makeLensesWith)
 import Linear (V2, V3)
 import qualified SDL
 
+import InputMap (InputMap)
 import Render.Types (RenderState)
 import Util (suffixedLRule)
 
@@ -19,6 +20,7 @@ data AppState = AppState
   , appFrameRate :: Double
   , appFrameRateFactor :: Double
   , appTimePrev :: Double
+  , appInputMap :: InputMap
   , appViewState :: ViewState
   , appRenderState :: RenderState
   }

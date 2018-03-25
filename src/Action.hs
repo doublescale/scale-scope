@@ -28,7 +28,9 @@ instance FromJSON AppAction where
 
 isRepeating :: AppAction -> Bool
 isRepeating FullscreenToggle = False
+isRepeating (FileLoad _) = False
 isRepeating ShaderReload = False
+isRepeating Quit = False
 isRepeating _ = True
 
 isContinuous :: AppAction -> Bool

@@ -12,6 +12,7 @@ import System.Environment (getArgs)
 
 import AppState (AppState(..), ViewState(..))
 import Event (eventLoop, loadPaths)
+import InputMap (defaultInputMap)
 import Render.Shader (reloadShader)
 import Render.Types
   ( RenderState(renderStateShader)
@@ -45,6 +46,7 @@ initState appWindow startTime shaderState =
   , appFrameRate = 0
   , appFrameRateFactor = 1
   , appTimePrev = startTime
+  , appInputMap = defaultInputMap
   , appViewState =
       ViewState
       { viewCamAngle = V2 0 0

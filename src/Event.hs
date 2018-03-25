@@ -11,15 +11,16 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State (MonadState, get, gets, modify)
 import Data.Bool (bool)
 import qualified Data.ByteString.Lazy.Char8 as BSL
-import Data.Functor (($>))
+import qualified Data.Map.Strict as Map
 import Data.Maybe (mapMaybe)
 import qualified Data.Store as Store
 import Linear (V2(V2), V3(V3), (*^), (^/), _y)
 import qualified SDL
 
-import Action (AppAction(..))
+import Action (AppAction(..), isRepeating)
 import AppState
 import Event.ModState (ModState(ModState), fromKeyModifier)
+import InputMap (InputMap(..))
 import Mesh (AnimationData(..))
 import Render (RenderState(..), render)
 import Render.Mesh (deleteMeshSequence, loadMeshSequence)
@@ -49,7 +50,8 @@ loadPaths _ = liftIO (putStrLn "Need exactly one file argument.")
 eventLoop :: (MonadIO m, MonadState AppState m, MonadError () m) => m ()
 eventLoop =
   forever $ do
-    eventActions <- mapMaybe eventToAction <$> SDL.pollEvents
+    inputMap <- gets appInputMap
+    eventActions <- mapMaybe (eventToAction inputMap) <$> SDL.pollEvents
     modState <- fromKeyModifier <$> SDL.getModState
     continuousActions <-
       keysToActions (1 / 60) modState <$> SDL.getKeyboardState
@@ -73,8 +75,8 @@ handleMouseMode =
            (any pressedButtons [SDL.ButtonLeft, SDL.ButtonMiddle]))
     return ()
 
-eventToAction :: SDL.Event -> Maybe AppAction
-eventToAction SDL.Event
+eventToAction :: InputMap -> SDL.Event -> Maybe AppAction
+eventToAction _ SDL.Event
   { SDL.eventPayload = SDL.MouseMotionEvent SDL.MouseMotionEventData
     { SDL.mouseMotionEventRelMotion = delta@(V2 _ dy)
     , SDL.mouseMotionEventState = buttons
@@ -83,40 +85,28 @@ eventToAction SDL.Event
     [SDL.ButtonLeft] -> Just (CamRotate (0.5 * fmap fromIntegral delta))
     [SDL.ButtonMiddle] -> Just (CamDistance (0.01 * fromIntegral dy))
     _ -> Nothing
-eventToAction SDL.Event
+eventToAction _ SDL.Event
   { SDL.eventPayload = SDL.MouseWheelEvent SDL.MouseWheelEventData
     { SDL.mouseWheelEventPos = V2 _ dy }
   } = Just (CamDistance (-fromIntegral dy))
-eventToAction SDL.Event
+eventToAction InputMap {keyboardMap} SDL.Event
   { SDL.eventPayload = SDL.KeyboardEvent SDL.KeyboardEventData
     { SDL.keyboardEventKeysym = SDL.Keysym {SDL.keysymScancode}
     , SDL.keyboardEventKeyMotion = SDL.Pressed
     , SDL.keyboardEventRepeat
     }
-  } = case keysymScancode of
-    SDL.ScancodeF5 -> guard (not keyboardEventRepeat) $> ShaderReload
-    SDL.ScancodeF11 -> guard (not keyboardEventRepeat) $> FullscreenToggle
-    SDL.ScancodeJ -> Just (FrameSkip (-1))
-    SDL.ScancodeComma -> Just (FrameSkip (-1))
-    SDL.ScancodeK -> Just (FrameSkip 1)
-    SDL.ScancodePeriod -> Just (FrameSkip 1)
-    SDL.ScancodeBackspace -> Just SpeedReset
-    SDL.ScancodeLeftBracket -> Just (SpeedMultiply (recip 1.125))
-    SDL.ScancodeU -> Just (SpeedMultiply (recip 1.125))
-    SDL.ScancodeRightBracket -> Just (SpeedMultiply 1.125)
-    SDL.ScancodeI -> Just (SpeedMultiply 1.125)
-    SDL.ScancodeBackslash -> Just (SpeedMultiply (-1))
-    SDL.ScancodeO -> Just (SpeedMultiply (-1))
-    SDL.ScancodeP -> Just PauseToggle
-    SDL.ScancodeEscape -> Just Quit
-    _ -> Nothing
-eventToAction SDL.Event
+  } = do
+    action <- Map.lookup keysymScancode keyboardMap
+    guard (isRepeating action || not keyboardEventRepeat)
+    return action
+eventToAction _ SDL.Event
   { SDL.eventPayload = SDL.DropEvent SDL.DropEventData
     { SDL.dropEventFile = dropData }
   } = Just (FileLoad (fromCString dropData))
-eventToAction SDL.Event {SDL.eventPayload = SDL.QuitEvent} = Just Quit
-eventToAction _ = Nothing
+eventToAction _ SDL.Event {SDL.eventPayload = SDL.QuitEvent} = Just Quit
+eventToAction _ _ = Nothing
 
+-- TODO: Probably integrate with dt somewhere else.
 keysToActions :: Double -> ModState -> (SDL.Scancode -> Bool) -> [AppAction]
 keysToActions dt (ModState False False False) keyState =
   concat
