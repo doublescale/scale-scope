@@ -10,25 +10,36 @@ import qualified Data.Map.Strict as Map
 import Data.Maybe (fromJust)
 import Data.Yaml (FromJSON, (.:), parseJSON, withObject)
 import GHC.Generics (Generic)
+import Linear (V2(V2))
 import qualified SDL
 
 import Action
 import ReadScancode (readScancode)
 
 data InputMap = InputMap
-  { keyboardMap :: Map SDL.Scancode AppAction
+  { mouseMotionMap :: Map SDL.MouseButton (V2 (Maybe AppAction))
+  , keyboardMap :: Map SDL.Scancode AppAction
   } deriving (Generic, Show)
 
 instance FromJSON InputMap where
-  parseJSON = withObject "InputMap" $ \o -> do
-    keyboardMap <- Map.mapKeys (fromJust . readScancode) <$> o .: "Keyboard"
-    -- TODO: Handle Nothing
-    return InputMap {..}
+  parseJSON =
+    withObject "InputMap" $ \o -> do
+      -- TODO: Temporary.
+      let InputMap {mouseMotionMap} = defaultInputMap
+      -- TODO: Handle Nothing.
+      keyboardMap <- Map.mapKeys (fromJust . readScancode) <$> o .: "Keyboard"
+      return InputMap {..}
 
 defaultInputMap :: InputMap
 defaultInputMap =
   InputMap
-  { keyboardMap =
+  { mouseMotionMap =
+      Map.fromList
+        [ ( SDL.ButtonLeft
+          , V2 (Just (CamRotate (V2 0.5 0))) (Just (CamRotate (V2 0 0.5))))
+        , (SDL.ButtonMiddle, V2 Nothing (Just (CamDistance 0.01)))
+        ]
+  , keyboardMap =
       Map.fromList
         [ (SDL.ScancodeF5, ShaderReload)
         , (SDL.ScancodeF11, FullscreenToggle)

@@ -1,3 +1,5 @@
+{-# LANGUAGE ViewPatterns #-}
+
 module Event
   ( loadPaths
   , eventLoop
@@ -11,13 +13,14 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State (MonadState, get, gets, modify)
 import Data.Bool (bool)
 import qualified Data.ByteString.Lazy.Char8 as BSL
+import Data.Foldable (toList)
 import qualified Data.Map.Strict as Map
-import Data.Maybe (mapMaybe)
+import Data.Maybe (catMaybes)
 import qualified Data.Store as Store
 import Linear (V2(V2), V3(V3), (*^), (^/), _y)
 import qualified SDL
 
-import Action (AppAction(..), isRepeating)
+import Action (AppAction(..), isRepeating, scaleAction)
 import AppState
 import Event.ModState (ModState(ModState), fromKeyModifier)
 import InputMap (InputMap(..))
@@ -51,7 +54,7 @@ eventLoop :: (MonadIO m, MonadState AppState m, MonadError () m) => m ()
 eventLoop =
   forever $ do
     inputMap <- gets appInputMap
-    eventActions <- mapMaybe (eventToAction inputMap) <$> SDL.pollEvents
+    eventActions <- concatMap (eventToActions inputMap) <$> SDL.pollEvents
     modState <- fromKeyModifier <$> SDL.getModState
     continuousActions <-
       keysToActions (1 / 60) modState <$> SDL.getKeyboardState
@@ -75,36 +78,35 @@ handleMouseMode =
            (any pressedButtons [SDL.ButtonLeft, SDL.ButtonMiddle]))
     return ()
 
-eventToAction :: InputMap -> SDL.Event -> Maybe AppAction
-eventToAction _ SDL.Event
+eventToActions :: InputMap -> SDL.Event -> [AppAction]
+eventToActions InputMap {mouseMotionMap} SDL.Event
   { SDL.eventPayload = SDL.MouseMotionEvent SDL.MouseMotionEventData
-    { SDL.mouseMotionEventRelMotion = delta@(V2 _ dy)
-    , SDL.mouseMotionEventState = buttons
+    { SDL.mouseMotionEventRelMotion = fmap fromIntegral -> V2 dx dy
+    , SDL.mouseMotionEventState = [mouseButton]
     }
-  } = case buttons of
-    [SDL.ButtonLeft] -> Just (CamRotate (0.5 * fmap fromIntegral delta))
-    [SDL.ButtonMiddle] -> Just (CamDistance (0.01 * fromIntegral dy))
-    _ -> Nothing
-eventToAction _ SDL.Event
+  } = concat . toList $ do
+    V2 xActionMaybe yActionMaybe <- Map.lookup mouseButton mouseMotionMap
+    return (catMaybes [scaleAction dx <$> xActionMaybe, scaleAction dy <$> yActionMaybe])
+eventToActions _ SDL.Event
   { SDL.eventPayload = SDL.MouseWheelEvent SDL.MouseWheelEventData
     { SDL.mouseWheelEventPos = V2 _ dy }
-  } = Just (CamDistance (-fromIntegral dy))
-eventToAction InputMap {keyboardMap} SDL.Event
+  } = [CamDistance (-fromIntegral dy)]
+eventToActions InputMap {keyboardMap} SDL.Event
   { SDL.eventPayload = SDL.KeyboardEvent SDL.KeyboardEventData
     { SDL.keyboardEventKeysym = SDL.Keysym {SDL.keysymScancode}
     , SDL.keyboardEventKeyMotion = SDL.Pressed
     , SDL.keyboardEventRepeat
     }
-  } = do
+  } = toList $ do
     action <- Map.lookup keysymScancode keyboardMap
     guard (isRepeating action || not keyboardEventRepeat)
     return action
-eventToAction _ SDL.Event
+eventToActions _ SDL.Event
   { SDL.eventPayload = SDL.DropEvent SDL.DropEventData
     { SDL.dropEventFile = dropData }
-  } = Just (FileLoad (fromCString dropData))
-eventToAction _ SDL.Event {SDL.eventPayload = SDL.QuitEvent} = Just Quit
-eventToAction _ _ = Nothing
+  } = [FileLoad (fromCString dropData)]
+eventToActions _ SDL.Event {SDL.eventPayload = SDL.QuitEvent} = [Quit]
+eventToActions _ _ = []
 
 -- TODO: Probably integrate with dt somewhere else.
 keysToActions :: Double -> ModState -> (SDL.Scancode -> Bool) -> [AppAction]

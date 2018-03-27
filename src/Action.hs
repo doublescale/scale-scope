@@ -2,10 +2,11 @@ module Action
   ( AppAction(..)
   , isRepeating
   , isContinuous
+  , scaleAction
   ) where
 
 import Data.Yaml (FromJSON, parseJSON)
-import Linear (V2, V3)
+import Linear (V2, V3, (*^))
 
 type Scalar = Double
 
@@ -39,4 +40,10 @@ isContinuous (CamRotate _) = True
 isContinuous (CamMove _) = True
 isContinuous _ = False
 
--- scaleAction?  Like fmap but only for continuous actions?
+scaleAction :: Scalar -> AppAction -> AppAction
+scaleAction s (CamDistance x) = CamDistance (s * x)
+scaleAction s (CamRotate x) = CamRotate (s *^ x)
+scaleAction s (CamMove x) = CamMove (s *^ x)
+scaleAction s (FrameSkip x) = FrameSkip (s * x)
+scaleAction s (SpeedMultiply x) = SpeedMultiply (s * x)
+scaleAction _ a = a
