@@ -81,12 +81,12 @@ handleMouseMode =
 eventToActions :: InputMap -> SDL.Event -> [AppAction]
 eventToActions InputMap {mouseMotionMap} SDL.Event
   { SDL.eventPayload = SDL.MouseMotionEvent SDL.MouseMotionEventData
-    { SDL.mouseMotionEventRelMotion = fmap fromIntegral -> V2 dx dy
+    { SDL.mouseMotionEventRelMotion = fmap fromIntegral -> vec
     , SDL.mouseMotionEventState = [mouseButton]
     }
-  } = concat . toList $ do
-    V2 xActionMaybe yActionMaybe <- Map.lookup mouseButton mouseMotionMap
-    return (catMaybes [scaleAction dx <$> xActionMaybe, scaleAction dy <$> yActionMaybe])
+  } = concat $ do
+    xyMaybeActions <- Map.lookup mouseButton mouseMotionMap
+    return (catMaybes (toList (fmap . scaleAction <$> vec <*> xyMaybeActions)))
 eventToActions _ SDL.Event
   { SDL.eventPayload = SDL.MouseWheelEvent SDL.MouseWheelEventData
     { SDL.mouseWheelEventPos = V2 _ dy }
