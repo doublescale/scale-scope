@@ -8,7 +8,7 @@ module InputMap
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromJust)
-import Data.Yaml (FromJSON, (.:), parseJSON, withObject)
+import Data.Yaml (FromJSON, Object, Parser, (.:), (.:?), parseJSON, withObject)
 import GHC.Generics (Generic)
 import Linear (V2(V2))
 import qualified SDL
@@ -24,11 +24,17 @@ data InputMap = InputMap
 instance FromJSON InputMap where
   parseJSON =
     withObject "InputMap" $ \o -> do
-      -- TODO: Temporary.
-      let InputMap {mouseMotionMap} = defaultInputMap
-      -- TODO: Handle Nothing.
+      mouseDragObject <- o .: "MouseDrag"
+      mouseMotionMap <-
+        Map.traverseWithKey
+          (const parse2DAction)
+          (Map.mapKeys read mouseDragObject)
+      -- TODO: Handle Nothing, failed read.
       keyboardMap <- Map.mapKeys (fromJust . readScancode) <$> o .: "Keyboard"
-      return InputMap {..}
+      return InputMap {mouseMotionMap, keyboardMap}
+
+parse2DAction :: Object -> Parser (V2 (Maybe AppAction))
+parse2DAction o = V2 <$> o .:? "x" <*> o .:? "y"
 
 defaultInputMap :: InputMap
 defaultInputMap =
