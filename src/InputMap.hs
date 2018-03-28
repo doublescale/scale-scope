@@ -1,17 +1,34 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module InputMap
   ( InputMap(..)
   , defaultInputMap
   ) where
 
+import Data.Aeson
+  ( FromJSONKey
+  , FromJSONKeyFunction(FromJSONKeyTextParser)
+  , fromJSONKey
+  )
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import Data.Maybe (fromJust)
-import Data.Yaml (FromJSON, Object, Parser, (.:), (.:?), parseJSON, withObject)
+import Data.Semigroup ((<>))
+import Data.Text (Text, unpack)
+import Data.Yaml
+  ( FromJSON
+  , Object
+  , Parser
+  , (.:)
+  , (.:?)
+  , parseJSON
+  , withObject
+  , withText
+  )
 import GHC.Generics (Generic)
 import Linear (V2(V2))
 import qualified SDL
+import Text.Read (readMaybe)
 
 import Action
 import ReadScancode (readScancode)
@@ -24,17 +41,47 @@ data InputMap = InputMap
 instance FromJSON InputMap where
   parseJSON =
     withObject "InputMap" $ \o -> do
-      mouseDragObject <- o .: "MouseDrag"
-      mouseMotionMap <-
-        Map.traverseWithKey
-          (const parse2DAction)
-          (Map.mapKeys read mouseDragObject)
-      -- TODO: Handle Nothing, failed read.
-      keyboardMap <- Map.mapKeys (fromJust . readScancode) <$> o .: "Keyboard"
+      mouseDragObject <- Map.mapKeys unwrapMouseButton <$> o .: "MouseDrag"
+      mouseMotionMap <- traverse parse2DAction mouseDragObject
+      keyboardMap <- Map.mapKeys unwrapScancode <$> o .: "Keyboard"
       return InputMap {mouseMotionMap, keyboardMap}
 
 parse2DAction :: Object -> Parser (V2 (Maybe AppAction))
 parse2DAction o = V2 <$> o .:? "x" <*> o .:? "y"
+
+newtype WrapMouseButton = WrapMouseButton
+  { unwrapMouseButton :: SDL.MouseButton
+  } deriving (Eq, Ord)
+
+instance FromJSON WrapMouseButton where
+  parseJSON =
+    fmap WrapMouseButton . withText "SDL.MouseButton" parseSdlMouseButton
+
+instance FromJSONKey WrapMouseButton where
+  fromJSONKey =
+    FromJSONKeyTextParser (fmap WrapMouseButton . parseSdlMouseButton)
+
+parseSdlMouseButton :: Text -> Parser SDL.MouseButton
+parseSdlMouseButton (unpack -> s) =
+  case readMaybe s of
+    Nothing -> fail ("Invalid mouse button: " ++ s)
+    Just mb -> return mb
+
+newtype WrapScancode = WrapScancode
+  { unwrapScancode :: SDL.Scancode
+  } deriving (Eq, Ord)
+
+instance FromJSON WrapScancode where
+  parseJSON = fmap WrapScancode . withText "SDL.Scancode" parseSdlScancode
+
+instance FromJSONKey WrapScancode where
+  fromJSONKey = FromJSONKeyTextParser (fmap WrapScancode . parseSdlScancode)
+
+parseSdlScancode :: Text -> Parser SDL.Scancode
+parseSdlScancode s =
+  case readScancode s of
+    Nothing -> fail (unpack ("Invalid key: " <> s))
+    Just sc -> return sc
 
 defaultInputMap :: InputMap
 defaultInputMap =

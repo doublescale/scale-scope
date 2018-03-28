@@ -5,8 +5,10 @@ module Action
   , scaleAction
   ) where
 
-import Data.Yaml (FromJSON, parseJSON)
+import Data.Text (unpack)
+import Data.Yaml (FromJSON, Parser, parseJSON, withText)
 import Linear (V2, V3, (*^))
+import Text.Read (readMaybe)
 
 type Scalar = Double
 
@@ -25,7 +27,13 @@ data AppAction
   deriving (Read, Show)
 
 instance FromJSON AppAction where
-  parseJSON = fmap read . parseJSON
+  parseJSON = withText "AppAction" (parseAction . unpack)
+
+parseAction :: String -> Parser AppAction
+parseAction s =
+  case readMaybe s of
+    Nothing -> fail ("Invalid AppAction: " ++ s)
+    Just a -> return a
 
 isRepeating :: AppAction -> Bool
 isRepeating FullscreenToggle = False

@@ -6,7 +6,6 @@ import Control.Exception (finally)
 import Control.Monad (void)
 import Control.Monad.Except (ExceptT, runExceptT)
 import Control.Monad.State (StateT, execStateT)
-import Data.Maybe (fromMaybe)
 import qualified Data.Yaml as Yaml
 import Linear (V2(V2), V3(V3))
 import qualified SDL
@@ -14,7 +13,7 @@ import System.Environment (getArgs)
 
 import AppState (AppState(..), ViewState(..))
 import Event (eventLoop, loadPaths)
-import InputMap (InputMap, defaultInputMap)
+import InputMap (InputMap)
 import Render.Shader (reloadShader)
 import Render.Types
   ( RenderState(renderStateShader)
@@ -34,7 +33,8 @@ runWithFiles files =
     -- Idea: Load defaultInputMap at start, inside StateT try to load given file
     -- (also make reload available as an action;
     --  maybe queue up actions at the start?)
-    inputMap <- fromMaybe defaultInputMap <$> Yaml.decodeFile "inputmap.yaml"
+    inputMap <-
+      either (fail . show) return =<< Yaml.decodeFileEither "inputmap.yaml"
     runAppStack (initState win startTime shaderState inputMap) $ do
       loadPaths files
       eventLoop

@@ -54,6 +54,7 @@ executables:
   scale-scope:
     main: Main.hs
     dependencies:
+      - aeson
       - lens
       - mtl
       - OpenGL
