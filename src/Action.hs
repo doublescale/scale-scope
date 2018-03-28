@@ -45,5 +45,5 @@ scaleAction s (CamDistance x) = CamDistance (s * x)
 scaleAction s (CamRotate x) = CamRotate (s *^ x)
 scaleAction s (CamMove x) = CamMove (s *^ x)
 scaleAction s (FrameSkip x) = FrameSkip (s * x)
-scaleAction s (SpeedMultiply x) = SpeedMultiply (s * x)
+scaleAction s (SpeedMultiply x) = SpeedMultiply (x ** s)
 scaleAction _ a = a

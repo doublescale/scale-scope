@@ -59,15 +59,15 @@ eventLoop =
     continuousActions <-
       keysToActions (1 / 60) modState <$> SDL.getKeyboardState
     mapM_ handleAction (eventActions ++ continuousActions)
-    handleMouseMode
+    handleMouseMode inputMap
     win <- gets appWindow
     appWinSizeL <~ fmap fromIntegral <$> SDL.glGetDrawableSize win
     modify . integrateState =<< SDL.time
     render =<< get
     SDL.glSwapWindow win
 
-handleMouseMode :: MonadIO m => m ()
-handleMouseMode =
+handleMouseMode :: MonadIO m => InputMap -> m ()
+handleMouseMode InputMap {mouseMotionMap} =
   liftIO $ do
     pressedButtons <- SDL.getMouseButtons
     _ <-
@@ -75,7 +75,7 @@ handleMouseMode =
         (bool
            SDL.AbsoluteLocation
            SDL.RelativeLocation
-           (any pressedButtons [SDL.ButtonLeft, SDL.ButtonMiddle]))
+           (any pressedButtons (Map.keys mouseMotionMap)))
     return ()
 
 eventToActions :: InputMap -> SDL.Event -> [AppAction]

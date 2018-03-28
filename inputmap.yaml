@@ -4,6 +4,8 @@ MouseDrag:
     y: CamRotate (V2 0 0.5)
   ButtonMiddle:
     y: CamDistance 0.01
+  ButtonRight:
+    x: SpeedMultiply 1.005
 # MouseWheel:
 #   y:
 #     CamDistance (-1)
