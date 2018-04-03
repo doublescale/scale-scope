@@ -35,6 +35,7 @@ import ReadScancode (readScancode)
 
 data InputMap = InputMap
   { mouseMotionMap :: Map SDL.MouseButton (V2 (Maybe AppAction))
+  , mouseWheelMap :: V2 (Maybe AppAction)
   , keyboardMap :: Map SDL.Scancode AppAction
   } deriving (Generic, Show)
 
@@ -43,8 +44,9 @@ instance FromJSON InputMap where
     withObject "InputMap" $ \o -> do
       mouseDragObject <- Map.mapKeys unwrapMouseButton <$> o .: "MouseDrag"
       mouseMotionMap <- traverse parse2DAction mouseDragObject
+      mouseWheelMap <- parse2DAction =<< o .: "MouseWheel"
       keyboardMap <- Map.mapKeys unwrapScancode <$> o .: "Keyboard"
-      return InputMap {mouseMotionMap, keyboardMap}
+      return InputMap {mouseMotionMap, mouseWheelMap, keyboardMap}
 
 parse2DAction :: Object -> Parser (V2 (Maybe AppAction))
 parse2DAction o = V2 <$> o .:? "x" <*> o .:? "y"
@@ -92,6 +94,7 @@ defaultInputMap =
           , V2 (Just (CamRotate (V2 0.5 0))) (Just (CamRotate (V2 0 0.5))))
         , (SDL.ButtonMiddle, V2 Nothing (Just (CamDistance 0.01)))
         ]
+  , mouseWheelMap = V2 Nothing (Just (CamDistance (-1)))
   , keyboardMap =
       Map.fromList
         [ (SDL.ScancodeF5, ShaderReload)

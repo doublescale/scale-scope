@@ -90,10 +90,10 @@ eventToActions InputMap {mouseMotionMap} SDL.Event
   } = concat $ do
     xyMaybeActions <- Map.lookup mouseButton mouseMotionMap
     return (catMaybes (toList (fmap . scaleAction <$> vec <*> xyMaybeActions)))
-eventToActions _ SDL.Event
+eventToActions InputMap {mouseWheelMap} SDL.Event
   { SDL.eventPayload = SDL.MouseWheelEvent SDL.MouseWheelEventData
-    { SDL.mouseWheelEventPos = V2 _ dy }
-  } = [CamDistance (-fromIntegral dy)]
+    { SDL.mouseWheelEventPos = fmap fromIntegral -> vec }
+  } = catMaybes (toList (fmap . scaleAction <$> vec <*> mouseWheelMap))
 eventToActions InputMap {keyboardMap} SDL.Event
   { SDL.eventPayload = SDL.KeyboardEvent SDL.KeyboardEventData
     { SDL.keyboardEventKeysym = SDL.Keysym {SDL.keysymScancode}

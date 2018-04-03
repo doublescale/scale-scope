@@ -6,9 +6,8 @@ MouseDrag:
     y: CamDistance 0.01
   ButtonRight:
     x: SpeedMultiply 1.005
-# MouseWheel:
-#   y:
-#     CamDistance (-1)
+MouseWheel:
+  y: CamDistance (-1)
 Keyboard:
   Left: CamRotate (V2 200 0)
   Right: CamRotate (V2 (-200) 0)
