@@ -10,10 +10,12 @@ MouseDrag:
 #   y:
 #     CamDistance (-1)
 Keyboard:
-  H: CamRotate (V2 5 0)
-  L: CamRotate (V2 (-5) 0)
-  K: CamRotate (V2 0 5)
-  J: CamRotate (V2 0 (-5))
+  Left: CamRotate (V2 200 0)
+  Right: CamRotate (V2 (-200) 0)
+  Up: CamRotate (V2 0 200)
+  Down: CamRotate (V2 0 (-200))
+  PageUp: CamMove (V3 0 0 5)
+  PageDown: CamMove (V3 0 0 (-5))
   P: PauseToggle
   Space: PauseToggle
   U: SpeedMultiply 0.8

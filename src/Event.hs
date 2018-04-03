@@ -1,8 +1,8 @@
 {-# LANGUAGE ViewPatterns #-}
 
 module Event
-  ( loadPaths
-  , eventLoop
+  ( eventLoop
+  , loadPaths
   ) where
 
 import qualified Codec.Compression.Zlib as Zlib
@@ -17,10 +17,10 @@ import Data.Foldable (toList)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (catMaybes)
 import qualified Data.Store as Store
-import Linear (V2(V2), V3(V3), (*^), (^/), _y)
+import Linear (V2(V2), (*^), (^/), _y)
 import qualified SDL
 
-import Action (AppAction(..), isRepeating, scaleAction)
+import Action (AppAction(..), isContinuous, isRepeating, scaleAction)
 import AppState
 import Event.ModState (ModState(ModState), fromKeyModifier)
 import InputMap (InputMap(..))
@@ -30,6 +30,25 @@ import Render.Mesh (deleteMeshSequence, loadMeshSequence)
 import Render.Shader (reloadShader)
 import Render.Types (initRenderState, renderStateMeshesL, renderStateShaderL)
 import Util (fromCString, modifyingM)
+
+eventLoop :: (MonadIO m, MonadState AppState m, MonadError () m) => m ()
+eventLoop =
+  forever $ do
+    inputMap <- gets appInputMap
+    eventActions <- concatMap (eventToActions inputMap) <$> SDL.pollEvents
+    modState <- fromKeyModifier <$> SDL.getModState
+    currentTime <- SDL.time
+    previousTime <- gets appTimePrev
+    let dt = currentTime - previousTime
+    continuousActions <- map (scaleAction dt) .
+      keysToActions inputMap modState <$> SDL.getKeyboardState
+    mapM_ handleAction (eventActions ++ continuousActions)
+    handleMouseMode inputMap
+    win <- gets appWindow
+    appWinSizeL <~ fmap fromIntegral <$> SDL.glGetDrawableSize win
+    modify (integrateState dt)
+    render =<< get
+    SDL.glSwapWindow win
 
 loadPaths :: (MonadIO m, MonadState AppState m) => [FilePath] -> m ()
 loadPaths [] = do
@@ -49,22 +68,6 @@ loadPaths [path] = do
           Right animData -> return animData
           Left err -> error (show err)
 loadPaths _ = liftIO (putStrLn "Need exactly one file argument.")
-
-eventLoop :: (MonadIO m, MonadState AppState m, MonadError () m) => m ()
-eventLoop =
-  forever $ do
-    inputMap <- gets appInputMap
-    eventActions <- concatMap (eventToActions inputMap) <$> SDL.pollEvents
-    modState <- fromKeyModifier <$> SDL.getModState
-    continuousActions <-
-      keysToActions (1 / 60) modState <$> SDL.getKeyboardState
-    mapM_ handleAction (eventActions ++ continuousActions)
-    handleMouseMode inputMap
-    win <- gets appWindow
-    appWinSizeL <~ fmap fromIntegral <$> SDL.glGetDrawableSize win
-    modify . integrateState =<< SDL.time
-    render =<< get
-    SDL.glSwapWindow win
 
 handleMouseMode :: MonadIO m => InputMap -> m ()
 handleMouseMode InputMap {mouseMotionMap} =
@@ -99,6 +102,7 @@ eventToActions InputMap {keyboardMap} SDL.Event
     }
   } = toList $ do
     action <- Map.lookup keysymScancode keyboardMap
+    guard (not (isContinuous action))
     guard (isRepeating action || not keyboardEventRepeat)
     return action
 eventToActions _ SDL.Event
@@ -108,17 +112,11 @@ eventToActions _ SDL.Event
 eventToActions _ SDL.Event {SDL.eventPayload = SDL.QuitEvent} = [Quit]
 eventToActions _ _ = []
 
--- TODO: Probably integrate with dt somewhere else.
-keysToActions :: Double -> ModState -> (SDL.Scancode -> Bool) -> [AppAction]
-keysToActions dt (ModState False False False) keyState =
-  concat
-    [ [CamRotate (dt *^ V2 200 0) | keyState SDL.ScancodeLeft]
-    , [CamRotate (dt *^ V2 (-200) 0) | keyState SDL.ScancodeRight]
-    , [CamRotate (dt *^ V2 0 200) | keyState SDL.ScancodeUp]
-    , [CamRotate (dt *^ V2 0 (-200)) | keyState SDL.ScancodeDown]
-    , [CamMove (dt *^ V3 0 0 (-5)) | keyState SDL.ScancodePageDown]
-    , [CamMove (dt *^ V3 0 0 5) | keyState SDL.ScancodePageUp]
-    ]
+keysToActions :: InputMap -> ModState -> (SDL.Scancode -> Bool) -> [AppAction]
+keysToActions InputMap {keyboardMap} (ModState False False False) keyState =
+  Map.elems (Map.filterWithKey isContinuousAndActive keyboardMap)
+  where
+    isContinuousAndActive key action = isContinuous action && keyState key
 keysToActions _ _ _ = []
 
 handleAction ::
@@ -143,7 +141,7 @@ handleAction Quit = throwError ()
 handleAction (FileLoad path) = loadPaths [path]
 
 integrateState :: Double -> AppState -> AppState
-integrateState currentTime st@AppState {appViewState = vs@ViewState {..}, ..} =
+integrateState dt st@AppState {appViewState = vs@ViewState {..}, ..} =
   st
   { appViewState =
       vs
@@ -157,14 +155,13 @@ integrateState currentTime st@AppState {appViewState = vs@ViewState {..}, ..} =
       , viewCamPos =
           (viewCamPos + dt * posFactor *^ viewSamplePos) ^/ (1 + dt * posFactor)
       }
-  , appTimePrev = currentTime
+  , appTimePrev = appTimePrev + dt
   , appFrameRateInterp =
       (appFrameRateInterp + dt * rateFactor * effectiveFrameRate) /
       (1 + dt * rateFactor)
   , appFrame = appFrame + dt * appFrameRateInterp
   }
   where
-    dt = currentTime - appTimePrev
     newCamAngleVel = viewCamAngleVel ^/ (1 + angleDamp * dt)
     newCamDistanceVel = viewCamDistanceVel / (1 + distanceDamp * dt)
     angleDamp = 10
