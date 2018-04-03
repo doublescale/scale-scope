@@ -1,6 +1,7 @@
+- document input-map configuration in readme
+- allow modifiers (S-Space, A-C-Space ...) in input-map
 - relative camera moving (unproject using view matrices?)
 - click-to-focus (query depth under cursor, unproject)
-- make key-bindings configurable
 - center camera and set distance based on bounding box
 - hardcode shaders as a fallback if shaders/ doesn't exist
 - factor out view-motion integration (FRP?)
