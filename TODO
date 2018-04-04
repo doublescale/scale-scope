@@ -8,4 +8,5 @@
 - specular shading, specular maps, bump maps
 - multiple objects/textures
 - loading screen
+- use "error" package, avoid exceptions
 - consider using Accelerate for normals and skeletal deform

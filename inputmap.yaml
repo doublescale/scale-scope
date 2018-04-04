@@ -24,4 +24,5 @@ Keyboard:
   Q: Quit
   Escape: Quit
   F5: ShaderReload
+  F6: InputMapReload
   F11: FullscreenToggle

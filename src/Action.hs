@@ -23,6 +23,7 @@ data AppAction
   | SpeedReset
   | FileLoad FilePath
   | ShaderReload
+  | InputMapReload
   | Quit
   deriving (Read, Show)
 
@@ -36,11 +37,10 @@ parseAction s =
     Just a -> return a
 
 isRepeating :: AppAction -> Bool
-isRepeating FullscreenToggle = False
-isRepeating (FileLoad _) = False
-isRepeating ShaderReload = False
-isRepeating Quit = False
-isRepeating _ = True
+isRepeating PauseToggle = True
+isRepeating (FrameSkip _) = True
+isRepeating (SpeedMultiply _) = True
+isRepeating _ = False
 
 isContinuous :: AppAction -> Bool
 isContinuous (CamDistance _) = True

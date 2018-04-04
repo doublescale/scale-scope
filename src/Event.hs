@@ -6,7 +6,7 @@ module Event
   ) where
 
 import qualified Codec.Compression.Zlib as Zlib
-import Control.Lens ((%=), (*=), (+=), (.=), (<~), (^.))
+import Control.Lens ((%=), (*=), (+=), (.=), (<~), (^.), assign)
 import Control.Monad (forever, guard)
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -23,7 +23,7 @@ import qualified SDL
 import Action (AppAction(..), isContinuous, isRepeating, scaleAction)
 import AppState
 import Event.ModState (ModState(ModState), fromKeyModifier)
-import InputMap (InputMap(..))
+import InputMap (InputMap(..), readInputMap)
 import Mesh (AnimationData(..))
 import Render (RenderState(..), render)
 import Render.Mesh (deleteMeshSequence, loadMeshSequence)
@@ -127,6 +127,7 @@ handleAction (CamMove d) = appViewStateL . viewSamplePosL += d
 handleAction PauseToggle = appPausedL %= not
 handleAction ShaderReload =
   modifyingM (appRenderStateL . renderStateShaderL) reloadShader
+handleAction InputMapReload = liftIO readInputMap >>= assign appInputMapL
 handleAction FullscreenToggle = do
   win <- gets appWindow
   liftIO $ do
@@ -137,8 +138,8 @@ handleAction FullscreenToggle = do
 handleAction (FrameSkip d) = appFrameL += d
 handleAction SpeedReset = appFrameRateFactorL .= 1
 handleAction (SpeedMultiply d) = appFrameRateFactorL *= d
-handleAction Quit = throwError ()
 handleAction (FileLoad path) = loadPaths [path]
+handleAction Quit = throwError ()
 
 integrateState :: Double -> AppState -> AppState
 integrateState dt st@AppState {appViewState = vs@ViewState {..}, ..} =

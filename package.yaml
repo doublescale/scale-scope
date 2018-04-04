@@ -42,8 +42,9 @@ dependencies:
 
 default-extensions:
   - DeriveAnyClass
-  - FlexibleContexts
   - DeriveGeneric
+  - FlexibleContexts
+  - LambdaCase
   - NamedFieldPuns
   - RecordWildCards
   - ScopedTypeVariables

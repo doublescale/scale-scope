@@ -4,6 +4,7 @@
 module InputMap
   ( InputMap(..)
   , defaultInputMap
+  , readInputMap
   ) where
 
 import Data.Aeson
@@ -21,6 +22,7 @@ import Data.Yaml
   , Parser
   , (.:)
   , (.:?)
+  , decodeFileEither
   , parseJSON
   , withObject
   , withText
@@ -116,3 +118,16 @@ defaultInputMap =
         , (SDL.ScancodeEscape, Quit)
         ]
   }
+
+readInputMap :: IO InputMap
+readInputMap =
+  decodeFileEither filepath >>= \case
+    Left err -> do
+      print err
+      putStrLn "Using default input map."
+      return defaultInputMap
+    Right inputMap -> do
+      putStrLn ("Loading " ++ show filepath)
+      return inputMap
+  where
+    filepath = "inputmap.yaml"
