@@ -26,3 +26,4 @@ Keyboard:
   F5: ShaderReload
   F6: InputMapReload
   F11: FullscreenToggle
+  F: FullscreenToggle

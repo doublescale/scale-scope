@@ -44,19 +44,25 @@ The program's working directory must include the `shader/` directory.
 While the program is running, it also accepts files to display via
 drag&drop onto its window.
 
-Interactive commands:
+Interactive commands (default):
 
 | Key               | Action                |
 | ----------------- | --------------------- |
 | LMB drag          | Rotate view           |
 | Scroll / MMB drag | Zoom view             |
-| Escape            | Exit                  |
+| Q / Escape        | Exit                  |
 | PgUp PgDown       | Move view up/down     |
-| P                 | Toggle pause          |
+| P / Space         | Toggle pause          |
 | J K               | Step back/forward     |
 | U I               | Playback rate up/down |
+| Backspace         | Playback rate reset   |
 | O                 | Reverse playback      |
 | F5                | Reload shaders        |
 | F11               | Toggle fullscreen     |
 
 (LMB, MMB, RMB stand for left/middle/right mouse button)
+
+If `inputmap.yaml` exists in the working directory, this file is parsed
+and replaces the default mappings.
+For possible keys, see `src/ReadScancode.hs`, and
+for possible actions, see `src/Action.hs`.

@@ -28,7 +28,7 @@ import Data.Yaml
   , withText
   )
 import GHC.Generics (Generic)
-import Linear (V2(V2))
+import Linear (V2(V2), V3(V3))
 import qualified SDL
 import Text.Read (readMaybe)
 
@@ -99,23 +99,20 @@ defaultInputMap =
   , mouseWheelMap = V2 Nothing (Just (CamDistance (-1)))
   , keyboardMap =
       Map.fromList
-        [ (SDL.ScancodeF5, ShaderReload)
-        , (SDL.ScancodeF11, FullscreenToggle)
-        , (SDL.ScancodeJ, FrameSkip (-1))
-        , (SDL.ScancodeComma, FrameSkip (-1))
-        , (SDL.ScancodeK, FrameSkip 1)
-        , (SDL.ScancodePeriod, FrameSkip 1)
-        , (SDL.ScancodeBackspace, SpeedReset)
-        , (SDL.ScancodeLeftBracket, SpeedMultiply (recip 1.125))
-        , (SDL.ScancodeU, SpeedMultiply (recip 1.125))
-        , (SDL.ScancodeRightBracket, SpeedMultiply 1.125)
-        , (SDL.ScancodeI, SpeedMultiply 1.125)
-        , (SDL.ScancodeBackslash, SpeedMultiply (-1))
-        , (SDL.ScancodeO, SpeedMultiply (-1))
-        , (SDL.ScancodeSpace, PauseToggle)
-        , (SDL.ScancodeP, PauseToggle)
-        , (SDL.ScancodeQ, Quit)
+        [ (SDL.ScancodeQ, Quit)
         , (SDL.ScancodeEscape, Quit)
+        , (SDL.ScancodePageUp, CamMove (V3 0 0 5))
+        , (SDL.ScancodePageDown, CamMove (V3 0 0 (-5)))
+        , (SDL.ScancodeP, PauseToggle)
+        , (SDL.ScancodeSpace, PauseToggle)
+        , (SDL.ScancodeJ, FrameSkip (-1))
+        , (SDL.ScancodeK, FrameSkip 1)
+        , (SDL.ScancodeU, SpeedMultiply (recip 1.125))
+        , (SDL.ScancodeI, SpeedMultiply 1.125)
+        , (SDL.ScancodeBackspace, SpeedReset)
+        , (SDL.ScancodeO, SpeedMultiply (-1))
+        , (SDL.ScancodeF5, ShaderReload)
+        , (SDL.ScancodeF11, FullscreenToggle)
         ]
   }
 
