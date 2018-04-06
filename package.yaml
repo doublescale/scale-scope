@@ -29,6 +29,7 @@ when:
 
 dependencies:
   - base
+  - attoparsec
   - bytestring
   - containers
   - directory
@@ -69,6 +70,7 @@ executables:
       - Event.ModState
       - InputMap
       - Mesh
+      - ParseModState
       - ReadScancode
       - Render
       - Render.Mesh
@@ -79,7 +81,6 @@ executables:
   scale-pack:
     main: MainPack.hs
     dependencies:
-      - attoparsec
       - JuicyPixels
       - optparse-applicative
     other-modules:

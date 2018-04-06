@@ -22,8 +22,8 @@ import qualified SDL
 
 import Action (AppAction(..), isContinuous, isRepeating, scaleAction)
 import AppState
-import Event.ModState (ModState(ModState), fromKeyModifier)
-import InputMap (InputMap(..), readInputMap)
+import Event.ModState (ModState, fromKeyModifier)
+import InputMap (InputMap(..), Modified(..), readInputMap)
 import Mesh (AnimationData(..))
 import Render (RenderState(..), render)
 import Render.Mesh (deleteMeshSequence, loadMeshSequence)
@@ -96,12 +96,15 @@ eventToActions InputMap {mouseWheelMap} SDL.Event
   } = catMaybes (toList (fmap . scaleAction <$> vec <*> mouseWheelMap))
 eventToActions InputMap {keyboardMap} SDL.Event
   { SDL.eventPayload = SDL.KeyboardEvent SDL.KeyboardEventData
-    { SDL.keyboardEventKeysym = SDL.Keysym {SDL.keysymScancode}
+    { SDL.keyboardEventKeysym = SDL.Keysym {SDL.keysymScancode, SDL.keysymModifier}
     , SDL.keyboardEventKeyMotion = SDL.Pressed
     , SDL.keyboardEventRepeat
     }
   } = toList $ do
-    action <- Map.lookup keysymScancode keyboardMap
+    action <-
+      Map.lookup
+        (Modified (fromKeyModifier keysymModifier) keysymScancode)
+        keyboardMap
     guard (not (isContinuous action))
     guard (isRepeating action || not keyboardEventRepeat)
     return action
@@ -113,11 +116,11 @@ eventToActions _ SDL.Event {SDL.eventPayload = SDL.QuitEvent} = [Quit]
 eventToActions _ _ = []
 
 keysToActions :: InputMap -> ModState -> (SDL.Scancode -> Bool) -> [AppAction]
-keysToActions InputMap {keyboardMap} (ModState False False False) keyState =
+keysToActions InputMap {keyboardMap} modState keyState =
   Map.elems (Map.filterWithKey isContinuousAndActive keyboardMap)
   where
-    isContinuousAndActive key action = isContinuous action && keyState key
-keysToActions _ _ _ = []
+    isContinuousAndActive (Modified mods key) action =
+      isContinuous action && mods == modState && keyState key
 
 handleAction ::
      (MonadIO m, MonadState AppState m, MonadError () m) => AppAction -> m ()

@@ -13,6 +13,10 @@ Keyboard:
   Right: CamRotate (V2 (-200) 0)
   Up: CamRotate (V2 0 200)
   Down: CamRotate (V2 0 (-200))
+  S-Left: CamMove (V3 (-5) 0 0)
+  S-Right: CamMove (V3 5 0 0)
+  S-Up: CamMove (V3 0 5 0)
+  S-Down: CamMove (V3 0 (-5) 0)
   PageUp: CamMove (V3 0 0 5)
   PageDown: CamMove (V3 0 0 (-5))
   P: PauseToggle
@@ -21,7 +25,7 @@ Keyboard:
   I: SpeedMultiply 1.25
   O: SpeedMultiply (-1)
   Backspace: SpeedReset
-  Q: Quit
+  C-Q: Quit
   Escape: Quit
   F5: ShaderReload
   F6: InputMapReload

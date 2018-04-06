@@ -3,6 +3,7 @@
 
 module InputMap
   ( InputMap(..)
+  , Modified(..)
   , defaultInputMap
   , readInputMap
   ) where
@@ -12,6 +13,7 @@ import Data.Aeson
   , FromJSONKeyFunction(FromJSONKeyTextParser)
   , fromJSONKey
   )
+import qualified Data.Attoparsec.Text as P
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Semigroup ((<>))
@@ -33,12 +35,19 @@ import qualified SDL
 import Text.Read (readMaybe)
 
 import Action
+import Event.ModState (ModState, emptyModState)
+import ParseModState (parseModifiers)
 import ReadScancode (readScancode)
+
+data Modified a = Modified
+  { modState :: ModState
+  , modKey :: a
+  } deriving (Eq, Ord, Show)
 
 data InputMap = InputMap
   { mouseMotionMap :: Map SDL.MouseButton (V2 (Maybe AppAction))
   , mouseWheelMap :: V2 (Maybe AppAction)
-  , keyboardMap :: Map SDL.Scancode AppAction
+  , keyboardMap :: Map (Modified SDL.Scancode) AppAction
   } deriving (Generic, Show)
 
 instance FromJSON InputMap where
@@ -49,6 +58,14 @@ instance FromJSON InputMap where
       mouseWheelMap <- parse2DAction =<< o .: "MouseWheel"
       keyboardMap <- Map.mapKeys unwrapScancode <$> o .: "Keyboard"
       return InputMap {mouseMotionMap, mouseWheelMap, keyboardMap}
+
+parseModified :: (Text -> Parser a) -> (Text -> Parser (Modified a))
+parseModified parser input =
+  case P.parseOnly ((,) <$> parseModifiers <*> P.takeText) input of
+    Left err -> fail err
+    Right (mods, rest) -> do
+      key <- parser rest
+      return (Modified mods key)
 
 parse2DAction :: Object -> Parser (V2 (Maybe AppAction))
 parse2DAction o = V2 <$> o .:? "x" <*> o .:? "y"
@@ -72,14 +89,14 @@ parseSdlMouseButton (unpack -> s) =
     Just mb -> return mb
 
 newtype WrapScancode = WrapScancode
-  { unwrapScancode :: SDL.Scancode
+  { unwrapScancode :: Modified SDL.Scancode
   } deriving (Eq, Ord)
 
 instance FromJSON WrapScancode where
-  parseJSON = fmap WrapScancode . withText "SDL.Scancode" parseSdlScancode
+  parseJSON = fmap WrapScancode . withText "SDL.Scancode" (parseModified parseSdlScancode)
 
 instance FromJSONKey WrapScancode where
-  fromJSONKey = FromJSONKeyTextParser (fmap WrapScancode . parseSdlScancode)
+  fromJSONKey = FromJSONKeyTextParser (fmap WrapScancode . parseModified parseSdlScancode)
 
 parseSdlScancode :: Text -> Parser SDL.Scancode
 parseSdlScancode s =
@@ -99,22 +116,24 @@ defaultInputMap =
   , mouseWheelMap = V2 Nothing (Just (CamDistance (-1)))
   , keyboardMap =
       Map.fromList
-        [ (SDL.ScancodeQ, Quit)
-        , (SDL.ScancodeEscape, Quit)
-        , (SDL.ScancodePageUp, CamMove (V3 0 0 5))
-        , (SDL.ScancodePageDown, CamMove (V3 0 0 (-5)))
-        , (SDL.ScancodeP, PauseToggle)
-        , (SDL.ScancodeSpace, PauseToggle)
-        , (SDL.ScancodeJ, FrameSkip (-1))
-        , (SDL.ScancodeK, FrameSkip 1)
-        , (SDL.ScancodeU, SpeedMultiply (recip 1.125))
-        , (SDL.ScancodeI, SpeedMultiply 1.125)
-        , (SDL.ScancodeBackspace, SpeedReset)
-        , (SDL.ScancodeO, SpeedMultiply (-1))
-        , (SDL.ScancodeF5, ShaderReload)
-        , (SDL.ScancodeF11, FullscreenToggle)
+        [ (unmodified SDL.ScancodeQ, Quit)
+        , (unmodified SDL.ScancodeEscape, Quit)
+        , (unmodified SDL.ScancodePageUp, CamMove (V3 0 0 5))
+        , (unmodified SDL.ScancodePageDown, CamMove (V3 0 0 (-5)))
+        , (unmodified SDL.ScancodeP, PauseToggle)
+        , (unmodified SDL.ScancodeSpace, PauseToggle)
+        , (unmodified SDL.ScancodeJ, FrameSkip (-1))
+        , (unmodified SDL.ScancodeK, FrameSkip 1)
+        , (unmodified SDL.ScancodeU, SpeedMultiply (recip 1.125))
+        , (unmodified SDL.ScancodeI, SpeedMultiply 1.125)
+        , (unmodified SDL.ScancodeBackspace, SpeedReset)
+        , (unmodified SDL.ScancodeO, SpeedMultiply (-1))
+        , (unmodified SDL.ScancodeF5, ShaderReload)
+        , (unmodified SDL.ScancodeF11, FullscreenToggle)
         ]
   }
+  where
+    unmodified k = Modified emptyModState k
 
 readInputMap :: IO InputMap
 readInputMap =
