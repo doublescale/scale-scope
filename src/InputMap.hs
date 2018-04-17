@@ -11,26 +11,22 @@ module InputMap
   ) where
 
 import Data.Aeson
-  ( FromJSONKey
+  ( FromJSON
+  , FromJSONKey
   , FromJSONKeyFunction(FromJSONKeyTextParser)
+  , (.:)
+  , (.:?)
   , fromJSONKey
   , fromJSONKeyList
+  , parseJSON
+  , withObject
   )
 import qualified Data.Attoparsec.Text as P
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Semigroup ((<>))
 import Data.Text (Text, unpack)
-import Data.Yaml
-  ( FromJSON
-  , Object
-  , Parser
-  , (.:)
-  , (.:?)
-  , decodeFileEither
-  , parseJSON
-  , withObject
-  )
+import Data.Yaml (Parser, decodeFileEither)
 import GHC.Generics (Generic)
 import Linear (V2(V2), V3(V3))
 import qualified SDL
@@ -56,20 +52,23 @@ data InputMap = InputMap
 instance FromJSON InputMap where
   parseJSON =
     withObject "InputMap" $ \o -> do
-      mouseMotionMap <- traverse parse2DAction =<< o .: "MouseDrag"
+      mouseMotionMap <- Map.map unXYMaybe <$> o .: "MouseDrag"
       mouseClickMap <- o .: "MouseClick"
-      mouseWheelMap <- traverse parse2DAction =<< o .: "MouseWheel"
+      mouseWheelMap <- Map.map unXYMaybe <$> o .: "MouseWheel"
       keyboardMap <- o .: "Keyboard"
       return InputMap {..}
+
+newtype XYMaybe a = XYMaybe { unXYMaybe :: V2 (Maybe a) }
+
+instance FromJSON a => FromJSON (XYMaybe a) where
+  parseJSON =
+    withObject "2D action" (\o -> XYMaybe <$> (V2 <$> o .:? "x" <*> o .:? "y"))
 
 parseModified :: (Text -> Parser a) -> (Text -> Parser (Modified a))
 parseModified parser input =
   case P.parseOnly ((,) <$> parseModifiers <*> P.takeText) input of
     Left err -> fail err
     Right (mods, rest) -> Modified mods <$> parser rest
-
-parse2DAction :: Object -> Parser (V2 (Maybe AppAction))
-parse2DAction o = V2 <$> o .:? "x" <*> o .:? "y"
 
 instance FromJSONKey (Modified SDL.MouseButton) where
   fromJSONKey = FromJSONKeyTextParser (parseModified parseSdlMouseButton)
