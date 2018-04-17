@@ -70,35 +70,30 @@ parseModified parser input =
     Left err -> fail err
     Right (mods, rest) -> Modified mods <$> parser rest
 
-instance FromJSONKey (Modified SDL.MouseButton) where
-  fromJSONKey = FromJSONKeyTextParser (parseModified parseSdlMouseButton)
+class Parsable a where
+  parsinate :: Text -> Parser a
+
+instance Parsable a => FromJSONKey (Modified a) where
+  fromJSONKey = FromJSONKeyTextParser (parseModified parsinate)
   fromJSONKeyList = FromJSONKeyTextParser (const (fail "unexpected key list"))
 
-parseSdlMouseButton :: Text -> Parser SDL.MouseButton
-parseSdlMouseButton (unpack -> s) =
-  case readMaybe s of
-    Nothing -> fail ("Invalid mouse button: " ++ s)
-    Just mb -> return mb
+instance Parsable SDL.MouseButton where
+  parsinate (unpack -> s) =
+    case readMaybe s of
+      Nothing -> fail ("Invalid mouse button: " ++ s)
+      Just mb -> return mb
 
-instance FromJSONKey (Modified SDL.Scancode) where
-  fromJSONKey = FromJSONKeyTextParser (parseModified parseSdlScancode)
-  fromJSONKeyList = FromJSONKeyTextParser (const (fail "unexpected key list"))
-
-parseSdlScancode :: Text -> Parser SDL.Scancode
-parseSdlScancode s =
-  case readScancode s of
-    Nothing -> fail (unpack ("Invalid key: " <> s))
-    Just sc -> return sc
+instance Parsable SDL.Scancode where
+  parsinate s =
+    case readScancode s of
+      Nothing -> fail (unpack ("Invalid key: " <> s))
+      Just sc -> return sc
 
 data Scroll = Scroll deriving (Eq, Ord, Show)
 
-instance FromJSONKey (Modified Scroll) where
-  fromJSONKey = FromJSONKeyTextParser (parseModified parseScroll)
-  fromJSONKeyList = FromJSONKeyTextParser (const (fail "unexpected key list"))
-
-parseScroll :: Text -> Parser Scroll
-parseScroll "Scroll" = return Scroll
-parseScroll _ = fail "Expected \"Scroll\""
+instance Parsable Scroll where
+  parsinate "Scroll" = return Scroll
+  parsinate _ = fail "Expected \"Scroll\""
 
 defaultInputMap :: InputMap
 defaultInputMap =
