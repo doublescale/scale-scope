@@ -11,7 +11,6 @@ import Control.Monad (forever, guard)
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State (MonadState, get, gets, modify)
-import Data.Bool (bool)
 import qualified Data.ByteString.Lazy.Char8 as BSL
 import Data.Foldable (toList)
 import qualified Data.Map.Strict as Map
@@ -35,15 +34,16 @@ eventLoop :: (MonadIO m, MonadState AppState m, MonadError () m) => m ()
 eventLoop =
   forever $ do
     inputMap <- gets appInputMap
-    eventActions <- concatMap (eventToActions inputMap) <$> SDL.pollEvents
     modState <- fromKeyModifier <$> SDL.getModState
+    eventActions <-
+      concatMap (eventToActions inputMap modState) <$> SDL.pollEvents
     currentTime <- SDL.time
     previousTime <- gets appTimePrev
     let dt = currentTime - previousTime
     continuousActions <- map (scaleAction dt) .
       keysToActions inputMap modState <$> SDL.getKeyboardState
     mapM_ handleAction (eventActions ++ continuousActions)
-    handleMouseMode inputMap
+    handleMouseMode inputMap modState
     win <- gets appWindow
     appWinSizeL <~ fmap fromIntegral <$> SDL.glGetDrawableSize win
     modify (integrateState dt)
@@ -69,51 +69,50 @@ loadPaths [path] = do
           Left err -> error (show err)
 loadPaths _ = liftIO (putStrLn "Need exactly one file argument.")
 
-handleMouseMode :: MonadIO m => InputMap -> m ()
-handleMouseMode InputMap {mouseMotionMap} =
+handleMouseMode :: MonadIO m => InputMap -> ModState -> m ()
+handleMouseMode InputMap {mouseMotionMap} mods =
   liftIO $ do
-    pressedButtons <- SDL.getMouseButtons
+    isPressed <- SDL.getMouseButtons
     _ <-
       SDL.setMouseLocationMode
-        (bool
-           SDL.AbsoluteLocation
-           SDL.RelativeLocation
-           (any pressedButtons (Map.keys mouseMotionMap)))
+        (if any isPressed mappedButtonsForCurrentMods
+           then SDL.RelativeLocation
+           else SDL.AbsoluteLocation)
     return ()
+  where
+    mappedButtonsForCurrentMods =
+      map modKey . filter ((== mods) . modState) $ Map.keys mouseMotionMap
 
-eventToActions :: InputMap -> SDL.Event -> [AppAction]
-eventToActions InputMap {mouseMotionMap} SDL.Event
+eventToActions :: InputMap -> ModState -> SDL.Event -> [AppAction]
+eventToActions InputMap {mouseMotionMap} mods SDL.Event
   { SDL.eventPayload = SDL.MouseMotionEvent SDL.MouseMotionEventData
     { SDL.mouseMotionEventRelMotion = fmap fromIntegral -> vec
     , SDL.mouseMotionEventState = [mouseButton]
     }
   } = concat $ do
-    xyMaybeActions <- Map.lookup mouseButton mouseMotionMap
+    xyMaybeActions <- Map.lookup (Modified mods mouseButton) mouseMotionMap
     return (catMaybes (toList (fmap . scaleAction <$> vec <*> xyMaybeActions)))
-eventToActions InputMap {mouseWheelMap} SDL.Event
+eventToActions InputMap {mouseWheelMap} _ SDL.Event
   { SDL.eventPayload = SDL.MouseWheelEvent SDL.MouseWheelEventData
     { SDL.mouseWheelEventPos = fmap fromIntegral -> vec }
   } = catMaybes (toList (fmap . scaleAction <$> vec <*> mouseWheelMap))
-eventToActions InputMap {keyboardMap} SDL.Event
+eventToActions InputMap {keyboardMap} mods SDL.Event
   { SDL.eventPayload = SDL.KeyboardEvent SDL.KeyboardEventData
-    { SDL.keyboardEventKeysym = SDL.Keysym {SDL.keysymScancode, SDL.keysymModifier}
+    { SDL.keyboardEventKeysym = SDL.Keysym {SDL.keysymScancode}
     , SDL.keyboardEventKeyMotion = SDL.Pressed
     , SDL.keyboardEventRepeat
     }
   } = toList $ do
-    action <-
-      Map.lookup
-        (Modified (fromKeyModifier keysymModifier) keysymScancode)
-        keyboardMap
+    action <- Map.lookup (Modified mods keysymScancode) keyboardMap
     guard (not (isContinuous action))
     guard (isRepeating action || not keyboardEventRepeat)
     return action
-eventToActions _ SDL.Event
+eventToActions _ _ SDL.Event
   { SDL.eventPayload = SDL.DropEvent SDL.DropEventData
     { SDL.dropEventFile = dropData }
   } = [FileLoad (fromCString dropData)]
-eventToActions _ SDL.Event {SDL.eventPayload = SDL.QuitEvent} = [Quit]
-eventToActions _ _ = []
+eventToActions _ _ SDL.Event {SDL.eventPayload = SDL.QuitEvent} = [Quit]
+eventToActions _ _ _ = []
 
 keysToActions :: InputMap -> ModState -> (SDL.Scancode -> Bool) -> [AppAction]
 keysToActions InputMap {keyboardMap} modState keyState =

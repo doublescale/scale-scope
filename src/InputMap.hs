@@ -45,7 +45,7 @@ data Modified a = Modified
   } deriving (Eq, Ord, Show)
 
 data InputMap = InputMap
-  { mouseMotionMap :: Map SDL.MouseButton (V2 (Maybe AppAction))
+  { mouseMotionMap :: Map (Modified SDL.MouseButton) (V2 (Maybe AppAction))
   , mouseWheelMap :: V2 (Maybe AppAction)
   , keyboardMap :: Map (Modified SDL.Scancode) AppAction
   } deriving (Generic, Show)
@@ -71,16 +71,18 @@ parse2DAction :: Object -> Parser (V2 (Maybe AppAction))
 parse2DAction o = V2 <$> o .:? "x" <*> o .:? "y"
 
 newtype WrapMouseButton = WrapMouseButton
-  { unwrapMouseButton :: SDL.MouseButton
+  { unwrapMouseButton :: Modified SDL.MouseButton
   } deriving (Eq, Ord)
 
 instance FromJSON WrapMouseButton where
   parseJSON =
-    fmap WrapMouseButton . withText "SDL.MouseButton" parseSdlMouseButton
+    fmap WrapMouseButton .
+    withText "SDL.MouseButton" (parseModified parseSdlMouseButton)
 
 instance FromJSONKey WrapMouseButton where
   fromJSONKey =
-    FromJSONKeyTextParser (fmap WrapMouseButton . parseSdlMouseButton)
+    FromJSONKeyTextParser
+      (fmap WrapMouseButton . parseModified parseSdlMouseButton)
 
 parseSdlMouseButton :: Text -> Parser SDL.MouseButton
 parseSdlMouseButton (unpack -> s) =
@@ -93,10 +95,12 @@ newtype WrapScancode = WrapScancode
   } deriving (Eq, Ord)
 
 instance FromJSON WrapScancode where
-  parseJSON = fmap WrapScancode . withText "SDL.Scancode" (parseModified parseSdlScancode)
+  parseJSON =
+    fmap WrapScancode . withText "SDL.Scancode" (parseModified parseSdlScancode)
 
 instance FromJSONKey WrapScancode where
-  fromJSONKey = FromJSONKeyTextParser (fmap WrapScancode . parseModified parseSdlScancode)
+  fromJSONKey =
+    FromJSONKeyTextParser (fmap WrapScancode . parseModified parseSdlScancode)
 
 parseSdlScancode :: Text -> Parser SDL.Scancode
 parseSdlScancode s =
@@ -109,9 +113,9 @@ defaultInputMap =
   InputMap
   { mouseMotionMap =
       Map.fromList
-        [ ( SDL.ButtonLeft
+        [ ( unmodified SDL.ButtonLeft
           , V2 (Just (CamRotate (V2 0.5 0))) (Just (CamRotate (V2 0 0.5))))
-        , (SDL.ButtonMiddle, V2 Nothing (Just (CamDistance 0.01)))
+        , (unmodified SDL.ButtonMiddle, V2 Nothing (Just (CamDistance 0.01)))
         ]
   , mouseWheelMap = V2 Nothing (Just (CamDistance (-1)))
   , keyboardMap =
