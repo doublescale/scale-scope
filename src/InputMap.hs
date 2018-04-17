@@ -1,9 +1,11 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module InputMap
   ( InputMap(..)
   , Modified(..)
+  , Scroll(..)
   , defaultInputMap
   , readInputMap
   ) where
@@ -47,21 +49,17 @@ data Modified a = Modified
 data InputMap = InputMap
   { mouseMotionMap :: Map (Modified SDL.MouseButton) (V2 (Maybe AppAction))
   , mouseClickMap :: Map (Modified SDL.MouseButton) AppAction
-  , mouseWheelMap :: Map (Modified ()) (V2 (Maybe AppAction))
+  , mouseWheelMap :: Map (Modified Scroll) (V2 (Maybe AppAction))
   , keyboardMap :: Map (Modified SDL.Scancode) AppAction
   } deriving (Generic, Show)
 
 instance FromJSON InputMap where
   parseJSON =
     withObject "InputMap" $ \o -> do
-      mouseMotionMap <-
-        traverse parse2DAction =<<
-        Map.mapKeys unwrapMouseButton <$> o .: "MouseDrag"
-      mouseClickMap <- Map.mapKeys unwrapMouseButton <$> o .: "MouseClick"
-      mouseWheelMap <-
-        traverse parse2DAction =<<
-        Map.mapKeys unwrapScroll <$> o .: "MouseWheel"
-      keyboardMap <- Map.mapKeys unwrapScancode <$> o .: "Keyboard"
+      mouseMotionMap <- traverse parse2DAction =<< o .: "MouseDrag"
+      mouseClickMap <- o .: "MouseClick"
+      mouseWheelMap <- traverse parse2DAction =<< o .: "MouseWheel"
+      keyboardMap <- o .: "Keyboard"
       return InputMap {..}
 
 parseModified :: (Text -> Parser a) -> (Text -> Parser (Modified a))
@@ -73,14 +71,8 @@ parseModified parser input =
 parse2DAction :: Object -> Parser (V2 (Maybe AppAction))
 parse2DAction o = V2 <$> o .:? "x" <*> o .:? "y"
 
-newtype WrapMouseButton = WrapMouseButton
-  { unwrapMouseButton :: Modified SDL.MouseButton
-  } deriving (Eq, Ord)
-
-instance FromJSONKey WrapMouseButton where
-  fromJSONKey =
-    FromJSONKeyTextParser
-      (fmap WrapMouseButton . parseModified parseSdlMouseButton)
+instance FromJSONKey (Modified SDL.MouseButton) where
+  fromJSONKey = FromJSONKeyTextParser (parseModified parseSdlMouseButton)
   fromJSONKeyList = FromJSONKeyTextParser (const (fail "unexpected key list"))
 
 parseSdlMouseButton :: Text -> Parser SDL.MouseButton
@@ -89,13 +81,8 @@ parseSdlMouseButton (unpack -> s) =
     Nothing -> fail ("Invalid mouse button: " ++ s)
     Just mb -> return mb
 
-newtype WrapScancode = WrapScancode
-  { unwrapScancode :: Modified SDL.Scancode
-  } deriving (Eq, Ord)
-
-instance FromJSONKey WrapScancode where
-  fromJSONKey =
-    FromJSONKeyTextParser (fmap WrapScancode . parseModified parseSdlScancode)
+instance FromJSONKey (Modified SDL.Scancode) where
+  fromJSONKey = FromJSONKeyTextParser (parseModified parseSdlScancode)
   fromJSONKeyList = FromJSONKeyTextParser (const (fail "unexpected key list"))
 
 parseSdlScancode :: Text -> Parser SDL.Scancode
@@ -104,17 +91,14 @@ parseSdlScancode s =
     Nothing -> fail (unpack ("Invalid key: " <> s))
     Just sc -> return sc
 
-newtype WrapScroll = WrapScroll
-  { unwrapScroll :: Modified ()
-  } deriving (Eq, Ord)
+data Scroll = Scroll deriving (Eq, Ord, Show)
 
-instance FromJSONKey WrapScroll where
-  fromJSONKey =
-    FromJSONKeyTextParser (fmap WrapScroll . parseModified parseScroll)
+instance FromJSONKey (Modified Scroll) where
+  fromJSONKey = FromJSONKeyTextParser (parseModified parseScroll)
   fromJSONKeyList = FromJSONKeyTextParser (const (fail "unexpected key list"))
 
-parseScroll :: Text -> Parser ()
-parseScroll "Scroll" = return ()
+parseScroll :: Text -> Parser Scroll
+parseScroll "Scroll" = return Scroll
 parseScroll _ = fail "Expected \"Scroll\""
 
 defaultInputMap :: InputMap
@@ -128,7 +112,7 @@ defaultInputMap =
         ]
   , mouseClickMap = Map.empty
   , mouseWheelMap =
-      Map.singleton (unmodified ()) (V2 Nothing (Just (CamDistance (-1))))
+      Map.singleton (unmodified Scroll) (V2 Nothing (Just (CamDistance (-1))))
   , keyboardMap =
       Map.fromList
         [ (unmodified SDL.ScancodeQ, Quit)

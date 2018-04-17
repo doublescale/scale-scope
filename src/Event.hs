@@ -22,7 +22,7 @@ import qualified SDL
 import Action (AppAction(..), isContinuous, isRepeating, scaleAction)
 import AppState
 import Event.ModState (ModState, fromKeyModifier)
-import InputMap (InputMap(..), Modified(..), readInputMap)
+import InputMap (InputMap(..), Modified(..), Scroll(..), readInputMap)
 import Mesh (AnimationData(..))
 import Render (RenderState(..), render)
 import Render.Mesh (deleteMeshSequence, loadMeshSequence)
@@ -102,7 +102,7 @@ eventToActions InputMap {mouseWheelMap} mods SDL.Event
   { SDL.eventPayload = SDL.MouseWheelEvent SDL.MouseWheelEventData
     { SDL.mouseWheelEventPos = fmap fromIntegral -> vec }
   } = concat $ do
-    xyMaybeActions <- Map.lookup (Modified mods ()) mouseWheelMap
+    xyMaybeActions <- Map.lookup (Modified mods Scroll) mouseWheelMap
     return (catMaybes (toList (fmap . scaleAction <$> vec <*> xyMaybeActions)))
 eventToActions InputMap {keyboardMap} mods SDL.Event
   { SDL.eventPayload = SDL.KeyboardEvent SDL.KeyboardEventData
