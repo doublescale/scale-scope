@@ -47,17 +47,20 @@ data Modified a = Modified
 data InputMap = InputMap
   { mouseMotionMap :: Map (Modified SDL.MouseButton) (V2 (Maybe AppAction))
   , mouseClickMap :: Map (Modified SDL.MouseButton) AppAction
-  , mouseWheelMap :: V2 (Maybe AppAction)
+  , mouseWheelMap :: Map (Modified ()) (V2 (Maybe AppAction))
   , keyboardMap :: Map (Modified SDL.Scancode) AppAction
   } deriving (Generic, Show)
 
 instance FromJSON InputMap where
   parseJSON =
     withObject "InputMap" $ \o -> do
-      mouseDragObject <- Map.mapKeys unwrapMouseButton <$> o .: "MouseDrag"
-      mouseMotionMap <- traverse parse2DAction mouseDragObject
+      mouseMotionMap <-
+        traverse parse2DAction =<<
+        Map.mapKeys unwrapMouseButton <$> o .: "MouseDrag"
       mouseClickMap <- Map.mapKeys unwrapMouseButton <$> o .: "MouseClick"
-      mouseWheelMap <- parse2DAction =<< o .: "MouseWheel"
+      mouseWheelMap <-
+        traverse parse2DAction =<<
+        Map.mapKeys unwrapScroll <$> o .: "MouseWheel"
       keyboardMap <- Map.mapKeys unwrapScancode <$> o .: "Keyboard"
       return InputMap {..}
 
@@ -65,9 +68,7 @@ parseModified :: (Text -> Parser a) -> (Text -> Parser (Modified a))
 parseModified parser input =
   case P.parseOnly ((,) <$> parseModifiers <*> P.takeText) input of
     Left err -> fail err
-    Right (mods, rest) -> do
-      key <- parser rest
-      return (Modified mods key)
+    Right (mods, rest) -> Modified mods <$> parser rest
 
 parse2DAction :: Object -> Parser (V2 (Maybe AppAction))
 parse2DAction o = V2 <$> o .:? "x" <*> o .:? "y"
@@ -110,6 +111,22 @@ parseSdlScancode s =
     Nothing -> fail (unpack ("Invalid key: " <> s))
     Just sc -> return sc
 
+newtype WrapScroll = WrapScroll
+  { unwrapScroll :: Modified ()
+  } deriving (Eq, Ord)
+
+instance FromJSON WrapScroll where
+  parseJSON =
+    fmap WrapScroll . withText "Scroll" (parseModified parseScroll)
+
+instance FromJSONKey WrapScroll where
+  fromJSONKey =
+    FromJSONKeyTextParser (fmap WrapScroll . parseModified parseScroll)
+
+parseScroll :: Text -> Parser ()
+parseScroll "Scroll" = return ()
+parseScroll _ = fail "Expected \"Scroll\""
+
 defaultInputMap :: InputMap
 defaultInputMap =
   InputMap
@@ -120,7 +137,8 @@ defaultInputMap =
         , (unmodified SDL.ButtonMiddle, V2 Nothing (Just (CamDistance 0.01)))
         ]
   , mouseClickMap = Map.empty
-  , mouseWheelMap = V2 Nothing (Just (CamDistance (-1)))
+  , mouseWheelMap =
+      Map.singleton (unmodified ()) (V2 Nothing (Just (CamDistance (-1))))
   , keyboardMap =
       Map.fromList
         [ (unmodified SDL.ScancodeQ, Quit)

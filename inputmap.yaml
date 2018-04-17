@@ -7,11 +7,18 @@ MouseDrag:
     y: CamRotate (V2 0 0.05)
   ButtonMiddle:
     y: CamDistance 0.01
+  C-ButtonRight:
+    x: FrameSkip 0.02
 MouseClick:
   ButtonRight: PauseToggle
   S-ButtonRight: SpeedMultiply (-1)
 MouseWheel:
-  y: CamDistance (-1)
+  Scroll:
+    y: CamDistance (-1)
+  S-Scroll:
+    y: FrameSkip 1
+  C-Scroll:
+    x: FrameSkip (-0.125)
 Keyboard:
   Left: CamRotate (V2 200 0)
   Right: CamRotate (V2 (-200) 0)
