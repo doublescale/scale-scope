@@ -144,7 +144,7 @@ handleAction FullscreenToggle = do
       SDL.Windowed -> SDL.setWindowMode win SDL.FullscreenDesktop
       _ -> SDL.setWindowMode win SDL.Windowed
 handleAction (FrameSkip d) = appFrameL += d
-handleAction SpeedReset = appFrameRateFactorL .= 1
+handleAction (SpeedSet s) = appFrameRateFactorL .= s
 handleAction (SpeedMultiply d) = appFrameRateFactorL *= d
 handleAction (FileLoad path) = loadPaths [path]
 handleAction Quit = throwError ()

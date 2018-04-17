@@ -20,7 +20,7 @@ data AppAction
   | PauseToggle
   | FrameSkip Scalar
   | SpeedMultiply Scalar
-  | SpeedReset
+  | SpeedSet Scalar
   | FileLoad FilePath
   | ShaderReload
   | InputMapReload

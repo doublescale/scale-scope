@@ -133,7 +133,7 @@ defaultInputMap =
         , (unmodified SDL.ScancodeK, FrameSkip 1)
         , (unmodified SDL.ScancodeU, SpeedMultiply (recip 1.125))
         , (unmodified SDL.ScancodeI, SpeedMultiply 1.125)
-        , (unmodified SDL.ScancodeBackspace, SpeedReset)
+        , (unmodified SDL.ScancodeBackspace, SpeedSet 1)
         , (unmodified SDL.ScancodeO, SpeedMultiply (-1))
         , (unmodified SDL.ScancodeF5, ShaderReload)
         , (unmodified SDL.ScancodeF11, FullscreenToggle)

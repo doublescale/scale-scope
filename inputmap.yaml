@@ -30,7 +30,7 @@ Keyboard:
   U: SpeedMultiply 0.8
   I: SpeedMultiply 1.25
   O: SpeedMultiply (-1)
-  Backspace: SpeedReset
+  Backspace: SpeedSet 1
   C-Q: Quit
   Escape: Quit
   F5: ShaderReload
