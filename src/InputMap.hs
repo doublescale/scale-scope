@@ -12,6 +12,7 @@ import Data.Aeson
   ( FromJSONKey
   , FromJSONKeyFunction(FromJSONKeyTextParser)
   , fromJSONKey
+  , fromJSONKeyList
   )
 import qualified Data.Attoparsec.Text as P
 import Data.Map.Strict (Map)
@@ -27,7 +28,6 @@ import Data.Yaml
   , decodeFileEither
   , parseJSON
   , withObject
-  , withText
   )
 import GHC.Generics (Generic)
 import Linear (V2(V2), V3(V3))
@@ -77,15 +77,11 @@ newtype WrapMouseButton = WrapMouseButton
   { unwrapMouseButton :: Modified SDL.MouseButton
   } deriving (Eq, Ord)
 
-instance FromJSON WrapMouseButton where
-  parseJSON =
-    fmap WrapMouseButton .
-    withText "SDL.MouseButton" (parseModified parseSdlMouseButton)
-
 instance FromJSONKey WrapMouseButton where
   fromJSONKey =
     FromJSONKeyTextParser
       (fmap WrapMouseButton . parseModified parseSdlMouseButton)
+  fromJSONKeyList = FromJSONKeyTextParser (const (fail "unexpected key list"))
 
 parseSdlMouseButton :: Text -> Parser SDL.MouseButton
 parseSdlMouseButton (unpack -> s) =
@@ -97,13 +93,10 @@ newtype WrapScancode = WrapScancode
   { unwrapScancode :: Modified SDL.Scancode
   } deriving (Eq, Ord)
 
-instance FromJSON WrapScancode where
-  parseJSON =
-    fmap WrapScancode . withText "SDL.Scancode" (parseModified parseSdlScancode)
-
 instance FromJSONKey WrapScancode where
   fromJSONKey =
     FromJSONKeyTextParser (fmap WrapScancode . parseModified parseSdlScancode)
+  fromJSONKeyList = FromJSONKeyTextParser (const (fail "unexpected key list"))
 
 parseSdlScancode :: Text -> Parser SDL.Scancode
 parseSdlScancode s =
@@ -115,13 +108,10 @@ newtype WrapScroll = WrapScroll
   { unwrapScroll :: Modified ()
   } deriving (Eq, Ord)
 
-instance FromJSON WrapScroll where
-  parseJSON =
-    fmap WrapScroll . withText "Scroll" (parseModified parseScroll)
-
 instance FromJSONKey WrapScroll where
   fromJSONKey =
     FromJSONKeyTextParser (fmap WrapScroll . parseModified parseScroll)
+  fromJSONKeyList = FromJSONKeyTextParser (const (fail "unexpected key list"))
 
 parseScroll :: Text -> Parser ()
 parseScroll "Scroll" = return ()
