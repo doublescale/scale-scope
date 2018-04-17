@@ -46,6 +46,7 @@ data Modified a = Modified
 
 data InputMap = InputMap
   { mouseMotionMap :: Map (Modified SDL.MouseButton) (V2 (Maybe AppAction))
+  , mouseClickMap :: Map (Modified SDL.MouseButton) AppAction
   , mouseWheelMap :: V2 (Maybe AppAction)
   , keyboardMap :: Map (Modified SDL.Scancode) AppAction
   } deriving (Generic, Show)
@@ -55,9 +56,10 @@ instance FromJSON InputMap where
     withObject "InputMap" $ \o -> do
       mouseDragObject <- Map.mapKeys unwrapMouseButton <$> o .: "MouseDrag"
       mouseMotionMap <- traverse parse2DAction mouseDragObject
+      mouseClickMap <- Map.mapKeys unwrapMouseButton <$> o .: "MouseClick"
       mouseWheelMap <- parse2DAction =<< o .: "MouseWheel"
       keyboardMap <- Map.mapKeys unwrapScancode <$> o .: "Keyboard"
-      return InputMap {mouseMotionMap, mouseWheelMap, keyboardMap}
+      return InputMap {..}
 
 parseModified :: (Text -> Parser a) -> (Text -> Parser (Modified a))
 parseModified parser input =
@@ -117,6 +119,7 @@ defaultInputMap =
           , V2 (Just (CamRotate (V2 0.5 0))) (Just (CamRotate (V2 0 0.5))))
         , (unmodified SDL.ButtonMiddle, V2 Nothing (Just (CamDistance 0.01)))
         ]
+  , mouseClickMap = Map.empty
   , mouseWheelMap = V2 Nothing (Just (CamDistance (-1)))
   , keyboardMap =
       Map.fromList

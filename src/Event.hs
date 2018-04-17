@@ -92,6 +92,12 @@ eventToActions InputMap {mouseMotionMap} mods SDL.Event
   } = concat $ do
     xyMaybeActions <- Map.lookup (Modified mods mouseButton) mouseMotionMap
     return (catMaybes (toList (fmap . scaleAction <$> vec <*> xyMaybeActions)))
+eventToActions InputMap {mouseClickMap} mods SDL.Event
+  { SDL.eventPayload = SDL.MouseButtonEvent SDL.MouseButtonEventData
+    { SDL.mouseButtonEventButton = mouseButton
+    , SDL.mouseButtonEventMotion = SDL.Pressed
+    }
+  } = toList (Map.lookup (Modified mods mouseButton) mouseClickMap)
 eventToActions InputMap {mouseWheelMap} _ SDL.Event
   { SDL.eventPayload = SDL.MouseWheelEvent SDL.MouseWheelEventData
     { SDL.mouseWheelEventPos = fmap fromIntegral -> vec }
