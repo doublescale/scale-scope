@@ -8,10 +8,11 @@ import Control.Monad.Except (ExceptT, runExceptT)
 import Control.Monad.State (StateT, execStateT)
 import Linear (V2(V2), V3(V3))
 import qualified SDL
+import Safe (headMay)
 import System.Environment (getArgs)
 
 import AppState (AppState(..), ViewState(..))
-import Event (eventLoop, loadPaths)
+import Event (eventLoop, loadPath)
 import InputMap (InputMap, readInputMap)
 import Render.Shader (reloadShader)
 import Render.Types
@@ -21,16 +22,16 @@ import Render.Types
   )
 
 main :: IO ()
-main = getArgs >>= runWithFiles
+main = runWithFile . headMay =<< getArgs
 
-runWithFiles :: [FilePath] -> IO ()
-runWithFiles files =
+runWithFile :: Maybe FilePath -> IO ()
+runWithFile maybeFile =
   withWindow $ \win -> do
     startTime <- SDL.time
     shaderState <- reloadShader Nothing
     inputMap <- readInputMap
     runAppStack (initState win startTime shaderState inputMap) $ do
-      loadPaths files
+      mapM_ loadPath maybeFile
       eventLoop
 
 runAppStack :: AppState -> ExceptT () (StateT AppState IO) () -> IO ()

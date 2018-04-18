@@ -60,6 +60,7 @@ executables:
       - lens
       - mtl
       - OpenGL
+      - safe
       - sdl2
       - text
       - yaml

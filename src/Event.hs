@@ -2,7 +2,7 @@
 
 module Event
   ( eventLoop
-  , loadPaths
+  , loadPath
   ) where
 
 import qualified Codec.Compression.Zlib as Zlib
@@ -27,7 +27,7 @@ import Mesh (AnimationData(..))
 import Render (RenderState(..), render, buildModelMatrix)
 import Render.Mesh (deleteMeshSequence, loadMeshSequence)
 import Render.Shader (reloadShader)
-import Render.Types (initRenderState, renderStateMeshesL, renderStateShaderL)
+import Render.Types (renderStateMeshesL, renderStateShaderL)
 import Util (fromCString, modifyingM)
 
 eventLoop :: (MonadIO m, MonadState AppState m, MonadError () m) => m ()
@@ -50,11 +50,8 @@ eventLoop =
     render =<< get
     SDL.glSwapWindow win
 
-loadPaths :: (MonadIO m, MonadState AppState m) => [FilePath] -> m ()
-loadPaths [] = do
-  deleteMeshSequence =<< gets (renderStateMeshes . appRenderState)
-  appRenderStateL .= initRenderState
-loadPaths [path] = do
+loadPath :: (MonadIO m, MonadState AppState m) => FilePath -> m ()
+loadPath path = do
   deleteMeshSequence =<< gets (renderStateMeshes . appRenderState)
   animData <- loadAnimationFile path
   newMeshSequence <- loadMeshSequence animData
@@ -67,7 +64,6 @@ loadPaths [path] = do
         case Store.decode (BSL.toStrict (Zlib.decompress blob)) of
           Right animData -> return animData
           Left err -> error (show err)
-loadPaths _ = liftIO (putStrLn "Need exactly one file argument.")
 
 handleMouseMode :: MonadIO m => InputMap -> ModState -> m ()
 handleMouseMode InputMap {mouseMotionMap} mods =
@@ -151,7 +147,7 @@ handleAction FullscreenToggle = do
 handleAction (FrameSkip d) = appFrameL += d
 handleAction (SpeedSet s) = appFrameRateFactorL .= s
 handleAction (SpeedMultiply d) = appFrameRateFactorL *= d
-handleAction (FileLoad path) = loadPaths [path]
+handleAction (FileLoad path) = loadPath path
 handleAction Quit = throwError ()
 
 integrateState :: Double -> AppState -> AppState
