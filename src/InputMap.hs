@@ -33,7 +33,7 @@ import qualified SDL
 import Text.Read (readMaybe)
 
 import Action
-import Event.ModState (ModState, emptyModState)
+import Event.ModState (ModState, emptyModState, modShift)
 import ParseModState (parseModifiers)
 import ReadScancode (readScancode)
 
@@ -102,6 +102,10 @@ defaultInputMap =
       Map.fromList
         [ ( unmodified SDL.ButtonLeft
           , V2 (Just (CamRotate (V2 0.5 0))) (Just (CamRotate (V2 0 0.5))))
+        , ( Modified emptyModState {modShift = True} SDL.ButtonLeft
+          , V2
+              (Just (CamMoveCam (V3 (-0.01) 0 0)))
+              (Just (CamMoveCam (V3 0 0.01 0))))
         , (unmodified SDL.ButtonMiddle, V2 Nothing (Just (CamDistance 0.01)))
         ]
   , mouseClickMap = Map.empty
