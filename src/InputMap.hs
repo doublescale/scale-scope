@@ -111,8 +111,8 @@ defaultInputMap =
       Map.fromList
         [ (unmodified SDL.ScancodeQ, Quit)
         , (unmodified SDL.ScancodeEscape, Quit)
-        , (unmodified SDL.ScancodePageUp, CamMove (V3 0 0 5))
-        , (unmodified SDL.ScancodePageDown, CamMove (V3 0 0 (-5)))
+        , (unmodified SDL.ScancodePageUp, CamMoveWorld (V3 0 0 5))
+        , (unmodified SDL.ScancodePageDown, CamMoveWorld (V3 0 0 (-5)))
         , (unmodified SDL.ScancodeP, PauseToggle)
         , (unmodified SDL.ScancodeSpace, PauseToggle)
         , (unmodified SDL.ScancodeJ, FrameSkip (-1))
@@ -126,7 +126,7 @@ defaultInputMap =
         ]
   }
   where
-    unmodified k = Modified emptyModState k
+    unmodified = Modified emptyModState
 
 readInputMap :: IO InputMap
 readInputMap =

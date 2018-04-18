@@ -15,7 +15,8 @@ type Scalar = Double
 data AppAction
   = CamDistance Scalar
   | CamRotate (V2 Scalar)
-  | CamMove (V3 Scalar)
+  | CamMoveCam (V3 Scalar)
+  | CamMoveWorld (V3 Scalar)
   | FullscreenToggle
   | PauseToggle
   | FrameSkip Scalar
@@ -45,13 +46,15 @@ isRepeating _ = False
 isContinuous :: AppAction -> Bool
 isContinuous (CamDistance _) = True
 isContinuous (CamRotate _) = True
-isContinuous (CamMove _) = True
+isContinuous (CamMoveCam _) = True
+isContinuous (CamMoveWorld _) = True
 isContinuous _ = False
 
 scaleAction :: Scalar -> AppAction -> AppAction
 scaleAction s (CamDistance x) = CamDistance (s * x)
 scaleAction s (CamRotate x) = CamRotate (s *^ x)
-scaleAction s (CamMove x) = CamMove (s *^ x)
+scaleAction s (CamMoveCam x) = CamMoveCam (s *^ x)
+scaleAction s (CamMoveWorld x) = CamMoveWorld (s *^ x)
 scaleAction s (FrameSkip x) = FrameSkip (s * x)
 scaleAction s (SpeedMultiply x) = SpeedMultiply (x ** s)
 scaleAction _ a = a

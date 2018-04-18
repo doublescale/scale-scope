@@ -3,39 +3,40 @@ MouseDrag:
     x: CamRotate (V2 0.5 0)
     y: CamRotate (V2 0 0.5)
   S-ButtonLeft:
-    x: CamRotate (V2 0.05 0)
-    y: CamRotate (V2 0 0.05)
+    x: CamMoveCam (V3 -0.01 0 0)
+    y: CamMoveCam (V3 0 0.01 0)
+  S-C-ButtonLeft:
+    x: CamMoveCam (V3 0.01 0 0)
+    y: CamMoveCam (V3 0 0 0.01)
   ButtonMiddle:
     y: CamDistance 0.01
   A-ButtonRight:
     x: FrameSkip 0.02
-  S-A-ButtonRight:
-    x: FrameSkip 0.002
 MouseClick:
   A-ButtonMiddle: PauseToggle
 MouseWheel:
   Scroll:
-    y: CamDistance (-1)
+    y: CamDistance -1
   A-Scroll:
     y: FrameSkip 1
 Keyboard:
   Left: CamRotate (V2 200 0)
-  Right: CamRotate (V2 (-200) 0)
+  Right: CamRotate (V2 -200 0)
   Up: CamRotate (V2 0 200)
-  Down: CamRotate (V2 0 (-200))
-  PageUp: CamDistance (-10)
+  Down: CamRotate (V2 0 -200)
+  PageUp: CamDistance -10
   PageDown: CamDistance 10
-  S-Left: CamMove (V3 (-5) 0 0)
-  S-Right: CamMove (V3 5 0 0)
-  S-Up: CamMove (V3 0 5 0)
-  S-Down: CamMove (V3 0 (-5) 0)
-  S-PageUp: CamMove (V3 0 0 5)
-  S-PageDown: CamMove (V3 0 0 (-5))
+  S-Left: CamMoveWorld (V3 -5 0 0)
+  S-Right: CamMoveWorld (V3 5 0 0)
+  S-Up: CamMoveWorld (V3 0 5 0)
+  S-Down: CamMoveWorld (V3 0 -5 0)
+  S-PageUp: CamMoveWorld (V3 0 0 5)
+  S-PageDown: CamMoveWorld (V3 0 0 -5)
   P: PauseToggle
   Space: PauseToggle
   U: SpeedMultiply 0.8
   I: SpeedMultiply 1.25
-  O: SpeedMultiply (-1)
+  O: SpeedMultiply -1
   Backspace: SpeedSet 1
   C-Q: Quit
   Escape: Quit

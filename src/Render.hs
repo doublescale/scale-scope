@@ -1,6 +1,7 @@
 module Render
   ( render
   , RenderState(..)
+  , buildModelMatrix
   ) where
 
 import Control.Applicative (liftA2)

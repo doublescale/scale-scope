@@ -6,7 +6,7 @@ module Event
   ) where
 
 import qualified Codec.Compression.Zlib as Zlib
-import Control.Lens ((%=), (*=), (+=), (.=), (<~), (^.), assign)
+import Control.Lens ((%=), (*=), (+=), (.=), (<~), (^.), assign, view)
 import Control.Monad (forever, guard)
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -16,7 +16,7 @@ import Data.Foldable (toList)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (catMaybes)
 import qualified Data.Store as Store
-import Linear (V2(V2), (*^), (^/), _y)
+import Linear (V2(V2), (*!), (*^), (^/), _xyz, _y, vector)
 import qualified SDL
 
 import Action (AppAction(..), isContinuous, isRepeating, scaleAction)
@@ -24,7 +24,7 @@ import AppState
 import Event.ModState (ModState, fromKeyModifier)
 import InputMap (InputMap(..), Modified(..), Scroll(..), readInputMap)
 import Mesh (AnimationData(..))
-import Render (RenderState(..), render)
+import Render (RenderState(..), render, buildModelMatrix)
 import Render.Mesh (deleteMeshSequence, loadMeshSequence)
 import Render.Shader (reloadShader)
 import Render.Types (initRenderState, renderStateMeshesL, renderStateShaderL)
@@ -133,7 +133,10 @@ handleAction ::
      (MonadIO m, MonadState AppState m, MonadError () m) => AppAction -> m ()
 handleAction (CamDistance d) = appViewStateL . viewCamDistanceVelL += d
 handleAction (CamRotate d) = appViewStateL . viewCamAngleVelL += d
-handleAction (CamMove d) = appViewStateL . viewSamplePosL += d
+handleAction (CamMoveCam d) = do
+  mat <- buildModelMatrix <$> gets appViewState
+  appViewStateL . viewSamplePosL += view _xyz (vector d *! mat)
+handleAction (CamMoveWorld d) = appViewStateL . viewSamplePosL += d
 handleAction PauseToggle = appPausedL %= not
 handleAction ShaderReload =
   modifyingM (appRenderStateL . renderStateShaderL) reloadShader
@@ -179,7 +182,7 @@ integrateState dt st@AppState {appViewState = vs@ViewState {..}, ..} =
     distanceDamp = 20
     angleFactor = 5
     distanceFactor = 2
-    posFactor = 10
+    posFactor = 20
     pitchRestitution =
       let p = viewCamAngle ^. _y
       in min 0 (90 - p) - min 0 (p + 90)
