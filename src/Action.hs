@@ -17,6 +17,7 @@ data AppAction
   | CamRotate (V2 Scalar)
   | CamMoveCam (V3 Scalar)
   | CamMoveWorld (V3 Scalar)
+  | CamFocusCursor
   | FullscreenToggle
   | PauseToggle
   | FrameSkip Scalar

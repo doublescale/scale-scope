@@ -7,7 +7,7 @@ module Event
 
 import qualified Codec.Compression.Zlib as Zlib
 import Control.Lens ((%=), (*=), (+=), (.=), (<~), (^.), assign, view)
-import Control.Monad (forever, guard)
+import Control.Monad (forever, guard, unless)
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State (MonadState, get, gets, modify)
@@ -16,7 +16,23 @@ import Data.Foldable (toList)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (catMaybes)
 import qualified Data.Store as Store
-import Linear (V2(V2), (*!), (*^), (^/), _xyz, _y, vector)
+import Foreign (alloca, peek)
+import GHC.Float (float2Double)
+import qualified Graphics.Rendering.OpenGL.GL as GL
+import Linear
+  ( V2(V2)
+  , V4(V4)
+  , (!*)
+  , (!*!)
+  , (*!)
+  , (*^)
+  , (^/)
+  , _xyz
+  , _y
+  , inv44
+  , normalizePoint
+  , vector
+  )
 import qualified SDL
 
 import Action (AppAction(..), isContinuous, isRepeating, scaleAction)
@@ -24,7 +40,7 @@ import AppState
 import Event.ModState (ModState, fromKeyModifier)
 import InputMap (InputMap(..), Modified(..), Scroll(..), readInputMap)
 import Mesh (AnimationData(..))
-import Render (RenderState(..), render, buildModelMatrix)
+import Render (RenderState(..), buildModelMatrix, buildViewMatrix, render)
 import Render.Mesh (deleteMeshSequence, loadMeshSequence)
 import Render.Shader (reloadShader)
 import Render.Types (renderStateMeshesL, renderStateShaderL)
@@ -133,6 +149,30 @@ handleAction (CamMoveCam d) = do
   mat <- buildModelMatrix <$> gets appViewState
   appViewStateL . viewSamplePosL += view _xyz (vector d *! mat)
 handleAction (CamMoveWorld d) = appViewStateL . viewSamplePosL += d
+handleAction CamFocusCursor = do
+  winSize <- gets appWinSize
+  let V2 w h = fromIntegral <$> winSize
+  SDL.P (V2 x y) <- fmap fromIntegral <$> liftIO SDL.getAbsoluteMouseLocation
+  depth :: GL.GLfloat <-
+    liftIO $
+    alloca
+      (\ptr -> do
+         GL.readPixels
+           (GL.Position x (h - y))
+           (GL.Size 1 1)
+           (GL.PixelData GL.DepthComponent GL.Float ptr)
+         peek ptr)
+  unless (depth == 1) $ do
+    modelMat <- buildModelMatrix <$> gets appViewState
+    let viewMat = buildViewMatrix winSize
+    let screenSpace :: V4 Double =
+          V4
+            (2 * fromIntegral x / fromIntegral w - 1)
+            (1 - 2 * fromIntegral y / fromIntegral h)
+            (2 * float2Double depth - 1)
+            1
+    let worldSpace = inv44 (viewMat !*! modelMat) !* screenSpace
+    appViewStateL . viewSamplePosL .= normalizePoint worldSpace
 handleAction PauseToggle = appPausedL %= not
 handleAction ShaderReload =
   modifyingM (appRenderStateL . renderStateShaderL) reloadShader

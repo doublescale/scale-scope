@@ -1,6 +1,9 @@
+{-# LANGUAGE ViewPatterns #-}
+
 module Render
   ( render
   , RenderState(..)
+  , buildViewMatrix
   , buildModelMatrix
   ) where
 
@@ -27,7 +30,7 @@ render :: MonadIO io => AppState -> io ()
 render AppState {appRenderState = RenderState {renderStateMeshes = MeshDescriptor{..}, ..}, ..} =
   liftIO $ do
     GL.viewport $=
-      (GL.Position 0 0, GL.Size (fromIntegral width) (fromIntegral height))
+      (GL.Position 0 0, GL.Size width height)
     GL.clear [GL.ColorBuffer, GL.DepthBuffer]
     GL.depthFunc $= Just GL.Lequal
     sequence_
@@ -36,9 +39,8 @@ render AppState {appRenderState = RenderState {renderStateMeshes = MeshDescripto
          currentVao
          renderStateShader)
   where
-    V2 width height = appWinSize
-    aspect = fromIntegral width / fromIntegral height
-    viewMat = perspective (pi / 4) aspect 0.01 100
+    V2 width height = fmap fromIntegral appWinSize
+    viewMat = buildViewMatrix appWinSize
     modelMat = buildModelMatrix appViewState
     frameTime = appFrame `mod'` 1
     currentVao = pickFrame meshVaos appFrame
@@ -62,6 +64,12 @@ renderMeshWithShader
   GL.uniform shaderViewMat $= glViewMat
   GL.bindVertexArrayObject $= Just meshVao
   GL.drawElements GL.Triangles (fromIntegral meshNIdxs) GL.UnsignedInt nullPtr
+
+buildViewMatrix :: V2 Int -> M44 Double
+buildViewMatrix (fmap fromIntegral -> V2 w h) =
+  perspective (pi / 4) aspect 0.01 100
+  where
+    aspect = w / h
 
 buildModelMatrix :: ViewState -> M44 Double
 buildModelMatrix ViewState {viewCamAngle, viewCamDistance, viewCamPos} =
